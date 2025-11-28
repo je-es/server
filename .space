@@ -1,0 +1,26 @@
+{
+  "type": "lib",
+  "pm": "bun",
+  "repo": {
+    "org": "je-es",
+    "name": "server",
+    "version": "0.0.1",
+    "desc": "Build faster, Sleep better !",
+    "url": "https://github.com/maysara-elshewehy/server",
+    "kw": [
+      "server",
+      "bun",
+      "typescript",
+      "api",
+      "rest"
+    ],
+    "license": "MIT"
+  },
+  "author": {
+    "id": "maysara-elshewehy",
+    "name": "Maysara",
+    "url": "https://github.com/maysara-elshewehy",
+    "email": "maysara.elshewehy@gmail.com"
+  },
+  "createdAt": "2025-11-27T08:31:02.855Z"
+}

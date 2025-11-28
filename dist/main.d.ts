@@ -1,3 +1,47 @@
+export { blob, check, foreignKey, index, integer, numeric, primaryKey, real, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
+export { Many, One, and, asc, between, desc, eq, exists, gt, gte, ilike, inArray, isNotNull, isNull, like, lt, lte, ne, not, notBetween, notExists, notInArray, or, relations, sql } from 'drizzle-orm';
+
+declare class Router {
+    private routes;
+    private regexRoutes;
+    match(method: string, path: string): {
+        handler: any;
+        params: Record<string, string>;
+    } | null;
+    getAll(): {
+        method: string;
+        path: string;
+        handler: any;
+    }[];
+    clear(): void;
+    remove(method: string, path: string): boolean;
+    register(method: string, path: string, handler: any, config?: any): void;
+    private pathToRegex;
+}
+
+declare class SecurityManager {
+    private rateLimitStore;
+    private csrfTokens;
+    private requestLog;
+    private readonly MAX_REQUEST_LOG_SIZE;
+    checkRateLimit(key: string, max: number, windowMs: number): boolean;
+    cleanupRateLimit(): void;
+    generateCsrfToken(sessionId: string, ttl?: number): string;
+    validateCsrfToken(token: string, sessionId: string): boolean;
+    cleanupCsrfTokens(): void;
+    sanitizeHtml(html: string): string;
+    sanitizeSql(input: string): string;
+    logRequest(id: string, method: string, path: string, ip: string, status: number, duration: number): void;
+    getRequestLog(id: string): any;
+    getAllRequestLogs(): any[];
+    clearAll(): void;
+    getStats(): {
+        rateLimitEntries: number;
+        csrfTokens: number;
+        requestLogs: number;
+    };
+}
+
 declare class Logger$1 {
     private level;
     private pretty;
@@ -78,10 +122,12 @@ declare class Logger$1 {
     }
 
     interface DatabaseConfig {
-        type            : 'sqlite' | 'postgres' | 'mysql'
+        type?           : 'bun-sql' // default
         name?           : string
         connection      : string | any
         schema?         : any
+        poolSize?       : number
+        timeout?        : number
     }
 
     interface SecurityConfig {
@@ -213,4 +259,4 @@ declare class Logger$1 {
 
 declare function server(config?: ServerConfig): ServerInstance;
 
-export { type AppContext, AppError, type AppMiddleware, type AuthConfig, type CookieOptions, type CorsConfig, type CsrfConfig, type DatabaseConfig, DatabaseError, type HelmetConfig, type HttpMethod, Logger$1 as Logger, type RateLimitConfig, RateLimitError, type RouteDefinition, type RouteHandler, type SecurityConfig, type ServerConfig, type ServerInstance, TimeoutError, ValidationError, server as default, server };
+export { type AppContext, AppError, type AppMiddleware, type AuthConfig, type CookieOptions, type CorsConfig, type CsrfConfig, type DatabaseConfig, DatabaseError, type HelmetConfig, type HttpMethod, Logger$1 as Logger, type RateLimitConfig, RateLimitError, type RouteDefinition, type RouteHandler, Router, type SecurityConfig, SecurityManager, type ServerConfig, type ServerInstance, TimeoutError, ValidationError, server as default, server };

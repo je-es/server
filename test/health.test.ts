@@ -88,7 +88,6 @@
 			port: 3216,
 			logging: false,
 			database: {
-				type: 'sqlite',
 				connection: sqlite
 			}
 			})

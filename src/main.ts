@@ -6,8 +6,7 @@
 
 // ╔════════════════════════════════════════ PACK ════════════════════════════════════════╗
 
-    import { drizzle }          from 'drizzle-orm/bun-sqlite'
-    import { Database }         from 'bun:sqlite'
+    import { drizzle }          from 'drizzle-orm/bun-sql'
     import { Router }           from './mod/router'
     import { SecurityManager }  from './mod/security'
     import { Logger }       	from './mod/logger'
@@ -244,21 +243,68 @@
             bunServer   : null,
 
             async start() {
-                // Initialize databases with validation
+                // Initialize databases with Bun SQL support
                 if (config.database) {
                     const dbConfigs = Array.isArray(config.database) ? config.database : [config.database]
                     for (const dbCfg of dbConfigs) {
-                    if (dbCfg.type === 'sqlite') {
-                        if (typeof dbCfg.connection !== 'string' && !(dbCfg.connection instanceof Database)) {
-                            throw new Error('SQLite connection must be a string path or Database instance')
+                        const dbName = dbCfg.name || 'default'
+
+                        try {
+                            // fallback to bun-sql
+                            if(!dbCfg.type) { dbCfg.type = 'bun-sql' }
+
+                            if (dbCfg.type === 'bun-sql') {
+                                // Bun's native SQL database
+                                if (typeof dbCfg.connection === 'string') {
+                                    // Create Drizzle instance directly with connection string
+                                    const db = drizzle(dbCfg.connection, { schema: dbCfg.schema })
+                                    dbs.set(dbName, db)
+
+                                    logger?.info({
+                                        name: dbName,
+                                        connection: 'string'
+                                    }, '✅ Bun SQL connected')
+                                } else if (typeof dbCfg.connection === 'function') {
+                                    // SQL is actually a function in Bun, not a class
+                                    // Pass the SQL function directly to Drizzle
+                                    const db = drizzle({
+                                        client: dbCfg.connection,
+                                        schema: dbCfg.schema
+                                    })
+                                    dbs.set(dbName, db)
+
+                                    logger?.info({
+                                        name: dbName,
+                                        connection: 'function'
+                                    }, '✅ Bun SQL connected')
+                                } else if (dbCfg.connection !== null && dbCfg.connection !== undefined && typeof dbCfg.connection === 'object') {
+                                    // Also support object connections
+                                    const db = drizzle({
+                                        client: dbCfg.connection,
+                                        schema: dbCfg.schema
+                                    })
+                                    dbs.set(dbName, db)
+
+                                    logger?.info({
+                                        name: dbName,
+                                        connection: 'object'
+                                    }, '✅ Bun SQL connected')
+                                } else {
+                                    // Better error message with actual type
+                                    const actualType = typeof dbCfg.connection
+                                    throw new Error(`Bun SQL connection must be a connection string, SQL function, or SQL instance (got ${actualType})`)
+                                }
+                            } else {
+                                throw new Error(`Unsupported database type: ${dbCfg.type}`)
+                            }
+                        } catch (error) {
+                            logger?.error({
+                                error: String(error),
+                                name: dbName,
+                                type: dbCfg.type
+                            }, 'Failed to connect to database')
+                            throw error
                         }
-                        const sqlite = typeof dbCfg.connection === 'string'
-                        ? new Database(dbCfg.connection)
-                        : dbCfg.connection
-                        const db = drizzle(sqlite, { schema: dbCfg.schema })
-                        dbs.set(dbCfg.name || 'default', db)
-                        logger?.info({ name: dbCfg.name || 'default' }, '✅ SQLite connected')
-                    }
                     }
                 }
 
@@ -304,13 +350,15 @@
                         await config.onShutdown()
                     } catch (e) {
                         logger?.error({ error: String(e) }, 'Error in shutdown handler')
-                        // Don't rethrow - we want to continue shutdown even if handler fails
                     }
                 }
 
+                // Close database connections
                 for (const [name, db] of dbs.entries()) {
                     try {
-                        if (db?.close) await db.close()
+                        if (db?.$client?.close) {
+                            db.$client.close()
+                        }
                         logger?.info({ name }, 'Database closed')
                     } catch (e) {
                         logger?.error({ error: String(e), name }, 'Error closing database')
@@ -628,8 +676,70 @@
 
 // ╔════════════════════════════════════════ ════ ════════════════════════════════════════╗
 
+    // Export all types
     export * from './types.d';
-    export { Logger as Logger };
+
+    // Export Logger
+    export { Logger };
+
+    // Export SecurityManager for advanced use cases
+    export { SecurityManager };
+
+    // Export Router for advanced use cases
+    export { Router };
+
+    // Default export
     export default server;
+
+    // ════════════════════ Drizzle ORM - Bun SQL (SQLite) ════════════════════
+    // Re-export Drizzle ORM types for Bun SQL (SQLite)
+    export {
+        sqliteTable,
+        integer,
+        text,
+        real,
+        blob,
+        numeric,
+        primaryKey,
+        uniqueIndex,
+        index,
+        foreignKey,
+        check
+    } from 'drizzle-orm/sqlite-core';
+
+    // ════════════════════ Drizzle ORM - Common Operators ════════════════════
+    // Re-export common Drizzle operators and utilities
+    export {
+        eq,         // Equal
+        ne,         // Not equal
+        and,        // AND condition
+        or,         // OR condition
+        not,        // NOT condition
+        gt,         // Greater than
+        gte,        // Greater than or equal
+        lt,         // Less than
+        lte,        // Less than or equal
+        like,       // LIKE pattern matching
+        ilike,      // Case-insensitive LIKE
+        inArray,    // IN array
+        notInArray, // NOT IN array
+        isNull,     // IS NULL
+        isNotNull,  // IS NOT NULL
+        exists,     // EXISTS subquery
+        notExists,  // NOT EXISTS subquery
+        between,    // BETWEEN range
+        notBetween, // NOT BETWEEN range
+        sql,        // Raw SQL
+        asc,        // Ascending order
+        desc        // Descending order
+    } from 'drizzle-orm';
+
+    // ════════════════════ Drizzle ORM - Relations ════════════════════
+    // Re-export relations helpers
+    export {
+        relations,
+        One,
+        Many
+    } from 'drizzle-orm';
 
 // ╚══════════════════════════════════════════════════════════════════════════════════════╝

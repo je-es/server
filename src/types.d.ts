@@ -65,10 +65,12 @@
     }
 
     export interface DatabaseConfig {
-        type            : 'sqlite' | 'postgres' | 'mysql'
+        type?           : 'bun-sql' // default
         name?           : string
         connection      : string | any
         schema?         : any
+        poolSize?       : number
+        timeout?        : number
     }
 
     export interface SecurityConfig {

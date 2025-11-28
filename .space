@@ -1,5 +1,6 @@
 {
   "type": "lib",
+  "template": "pure",
   "pm": "bun",
   "repo": {
     "org": "je-es",
@@ -8,11 +9,8 @@
     "desc": "Build faster, Sleep better !",
     "url": "https://github.com/maysara-elshewehy/server",
     "kw": [
-      "server",
-      "bun",
-      "typescript",
-      "api",
-      "rest"
+      "je-es",
+      "server"
     ],
     "license": "MIT"
   },

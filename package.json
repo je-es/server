@@ -1,6 +1,6 @@
 {
   "name": "@je-es/server",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Build faster, Sleep better !",
   "keywords": [
     "je-es",
@@ -14,7 +14,7 @@
   "author": "Maysara <maysara.elshewehy@gmail.com>",
   "repository": {
     "type": "git",
-    "url": "https://github.com/maysara-elshewehy/server"
+    "url": "git+https://github.com/maysara-elshewehy/server.git"
   },
   "type": "module",
   "main": "./dist/main.js",

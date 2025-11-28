@@ -5,7 +5,7 @@
   "repo": {
     "org": "je-es",
     "name": "server",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "desc": "Build faster, Sleep better !",
     "url": "https://github.com/maysara-elshewehy/server",
     "kw": [

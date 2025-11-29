@@ -262,11 +262,11 @@
                         router.register('HEAD', `${staticCfg.path}/*`, handler, staticRoute)
                     }
 
-                    logger?.info({
-                        urlPath: staticCfg.path,
-                        directory: staticCfg.directory,
-                        maxAge: staticCfg.maxAge || 3600
-                    }, '✔ Static file serving enabled')
+                    // logger?.info({
+                    //     urlPath: staticCfg.path,
+                    //     directory: staticCfg.directory,
+                    //     maxAge: staticCfg.maxAge || 3600
+                    // }, '✔ Static file serving enabled')
                 } catch (error) {
                     logger?.error({
                         error: String(error),

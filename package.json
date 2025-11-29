@@ -1,6 +1,6 @@
 {
 	"name"                             : "@je-es/server",
-	"version"                          : "0.0.9",
+	"version"                          : "0.1.0",
 	"description"                      : "Build faster, Sleep better !",
 	"keywords"                         : ["je-es", "server"],
 	"license"                          : "MIT",

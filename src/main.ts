@@ -110,12 +110,12 @@
                 // Match route
                 const routeMatch = router.match(method, path)
                 if (!routeMatch) {
-                    const ctx = createAppContext(request, {}, defaultDb, logger, requestId)
+                    const ctx = createAppContext(ip, request, {}, defaultDb, logger, requestId)
                     logger?.warn({ requestId, method, path, ip }, 'Route not found')
                     return ctx.json({ error: 'Not Found', path }, 404)
                 }
 
-                const ctx = createAppContext(request, routeMatch.params || {}, defaultDb, logger, requestId)
+                const ctx = createAppContext(ip, request, routeMatch.params || {}, defaultDb, logger, requestId)
                 ctx.body = body
                 ctx.request = request
 
@@ -354,9 +354,13 @@
                     router.register(m, route.path, route.handler, route)
                 })
                 logger?.info({ method: route.method, path: route.path }, 'Route added')
-                },
+            },
 
-                getRoutes() {
+            addRoutes(routes: types.RouteDefinition[]) {
+                routes.forEach(route => this.addRoute(route))
+            },
+
+            getRoutes() {
                 return routes
             }
         }
@@ -444,6 +448,7 @@
 
     // Create app context with request ID
     function createAppContext(
+        ip          : string,
         request     : Request,
         params      : Record<string, string>,
         db          : any,
@@ -458,6 +463,7 @@
         const parsedCookies = parseCookies(headers.get('cookie') || '')
 
         const ctx: any = {
+            ip,
             request,
             params,
             query,

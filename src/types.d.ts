@@ -11,6 +11,7 @@
     export type AppMiddleware   = (c: AppContext, next: () => Promise<void>) => void | Promise<void>
 
     export interface AppContext {
+        ip              : string
         request         : Request
         params          : Record<string, string>
         query           : Record<string, any>
@@ -152,6 +153,7 @@
         start           : () => Promise<void>
         stop            : () => Promise<void>
         addRoute        : (route: RouteDefinition) => void
+        addRoutes       : (routes: RouteDefinition[]) => void
         getRoutes       : () => RouteDefinition[]
     }
 

@@ -65,6 +65,7 @@ declare class Logger$1 {
     type AppMiddleware   = (c: AppContext, next: () => Promise<void>) => void | Promise<void>
 
     interface AppContext {
+        ip              : string
         request         : Request
         params          : Record<string, string>
         query           : Record<string, any>
@@ -206,6 +207,7 @@ declare class Logger$1 {
         start           : () => Promise<void>
         stop            : () => Promise<void>
         addRoute        : (route: RouteDefinition) => void
+        addRoutes       : (routes: RouteDefinition[]) => void
         getRoutes       : () => RouteDefinition[]
     }
 

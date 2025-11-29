@@ -1,12 +1,12 @@
 {
     "type"              : "lib",
-    "template"          : "pure",
+    "template"          : "clean",
     "pm"                : "bun",
 
     "repo"              : {
         "org"           : "je-es",
         "name"          : "server",
-        "version"       : "0.0.5",
+        "version"       : "0.0.6",
         "desc"          : "Build faster, Sleep better !",
         "url"           : "https://github.com/je-es/server",
         "kw"            : [ "je-es", "server" ],

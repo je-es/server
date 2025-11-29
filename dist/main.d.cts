@@ -172,7 +172,7 @@ declare class Logger$1 {
     }
 
     interface ServerConfig {
-        port?           : number
+        port?           : number | string
         hostname?       : string
         requestTimeout? : number
         maxRequestSize? : number

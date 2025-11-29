@@ -118,7 +118,7 @@
     }
 
     export interface ServerConfig {
-        port?           : number
+        port?           : number | string
         hostname?       : string
         requestTimeout? : number
         maxRequestSize? : number

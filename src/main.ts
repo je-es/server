@@ -30,7 +30,7 @@
     export function server(config: types.ServerConfig = {}): types.ServerInstance {
 
 		// ════════ Configuration ════════
-		const port                      = config.port || 3000
+		const port                      = Number(config.port) || 3000
 		const hostname                  = config.hostname || 'localhost'
 		const maxReqSize                = config.maxRequestSize || 10 * 1024 * 1024
 		const requestTimeout            = config.requestTimeout || 30000

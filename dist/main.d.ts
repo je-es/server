@@ -43,6 +43,7 @@ declare class Logger$1 {
     private level;
     private pretty;
     private levels;
+    private colors;
     constructor(level?: 'debug' | 'info' | 'warn' | 'error', pretty?: boolean);
     debug(data: any, msg?: string): void;
     info(data: any, msg?: string): void;
@@ -50,6 +51,11 @@ declare class Logger$1 {
     error(data: any, msg?: string): void;
     fatal(data: any, msg?: string): void;
     private log;
+    private prettyLog;
+    private colorizeMethod;
+    private colorizeStatus;
+    private getLevelIcon;
+    private getLevelColor;
 }
 
 // src/types.d.ts

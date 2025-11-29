@@ -268,7 +268,7 @@
                                 logger?.info({
                                     name: dbName,
                                     connection: dbCfg.connection
-                                }, '✅ Database connected')
+                                }, '✔ Database connected')
                             } else {
                                 throw new Error(`Database connection must be a string path (got ${typeof dbCfg.connection})`)
                             }
@@ -290,8 +290,8 @@
                     `→ URL:          ${url}` + `\n` +
                     `→ Environment:  ${(process.env.NODE_ENV || 'development')}` + `\n` +
                     `→ Routes:       ${routes.length.toString()}` + `\n` +
-                    `→ Database:     ${(dbs.size > 0 ? '✅ Connected' : '❌ None')}` + `\n` +
-                    `→ Security:     ${(config.security ? '✅ ENABLED' : '❌ Disabled')}` + `\n` +
+                    `→ Database:     ${(dbs.size > 0 ? '✔ Connected' : '❌ None')}` + `\n` +
+                    `→ Security:     ${(config.security ? '✔ ENABLED' : '❌ Disabled')}` + `\n` +
                         `\n` +
                     `🔍 Health:    ${url}/health` + `\n` +
                     `🔍 Ready:     ${url}/readiness`+  `\n`

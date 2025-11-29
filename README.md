@@ -404,7 +404,7 @@
 
         const app = server({
             database: {
-                connection: './my_app.db' // ✅ File-based SQLite - data persists!
+                connection: './my_app.db' // ✔ File-based SQLite - data persists!
                 // or ':memory:' for in-memory database
             }
         });

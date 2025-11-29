@@ -38,17 +38,19 @@
 
 				// Try static route first (faster)
 				if (this.routes.has(key)) {
-				return { handler: this.routes.get(key), params: {} }
+					return { handler: this.routes.get(key), params: {} }
 				}
 
 				// Try dynamic routes
 				for (const route of this.regexRoutes) {
-				if (route.method === method) {
-					const match = path.match(route.pattern)
-					if (match?.groups) {
-					return { handler: route.handler, params: match.groups }
+					if (route.method === method) {
+						const match = path.match(route.pattern)
+						if (match) {
+							// Extract named groups if they exist
+							const params = match.groups || {}
+							return { handler: route.handler, params }
+						}
 					}
-				}
 				}
 
 				return null
@@ -56,19 +58,19 @@
 
 			getAll() {
 				const staticRoutes = Array.from(this.routes.entries()).map(([key, handler]) => {
-				const colonIndex = key.indexOf(':')
-				const method = key.substring(0, colonIndex)
-				const path = key.substring(colonIndex + 1)
-				return { method, path, handler }
+					const colonIndex = key.indexOf(':')
+					const method = key.substring(0, colonIndex)
+					const path = key.substring(colonIndex + 1)
+					return { method, path, handler }
 				})
 
 				const dynamicRoutes = this.regexRoutes.map(route => {
-				const colonIndex = route.key.indexOf(':')
-				return {
-					method: route.method,
-					path: route.key.substring(colonIndex + 1),
-					handler: route.handler
-				}
+					const colonIndex = route.key.indexOf(':')
+					return {
+						method: route.method,
+						path: route.key.substring(colonIndex + 1),
+						handler: route.handler
+					}
 				})
 
 				return [...staticRoutes, ...dynamicRoutes]
@@ -83,14 +85,14 @@
 				const key = `${method}:${path}`
 
 				if (this.routes.has(key)) {
-				this.routes.delete(key)
-				return true
+					this.routes.delete(key)
+					return true
 				}
 
 				const index = this.regexRoutes.findIndex(r => r.key === key)
 				if (index >= 0) {
-				this.regexRoutes.splice(index, 1)
-				return true
+					this.regexRoutes.splice(index, 1)
+					return true
 				}
 
 				return false
@@ -99,30 +101,31 @@
 			register(method: string, path: string, handler: any, config: any = {}) {
 				const key = `${method}:${path}`
 
-				if (path.includes(':')) {
-				// Dynamic route with params
-				const pattern = this.pathToRegex(path)
+				// Check if path needs regex (has :params or wildcards)
+				if (path.includes(':') || path.includes('*')) {
+					// Dynamic route with params or wildcards
+					const pattern = this.pathToRegex(path)
 
-				// Check if route already exists to prevent duplicates
-				const existingIndex = this.regexRoutes.findIndex(r => r.key === key)
+					// Check if route already exists to prevent duplicates
+					const existingIndex = this.regexRoutes.findIndex(r => r.key === key)
 
-				const route = {
-					pattern,
-					method,
-					handler,
-					key
-				}
+					const route = {
+						pattern,
+						method,
+						handler,
+						key
+					}
 
-				if (existingIndex >= 0) {
-					// Update existing route
-					this.regexRoutes[existingIndex] = route
+					if (existingIndex >= 0) {
+						// Update existing route
+						this.regexRoutes[existingIndex] = route
+					} else {
+						// Add new route
+						this.regexRoutes.push(route)
+					}
 				} else {
-					// Add new route
-					this.regexRoutes.push(route)
-				}
-				} else {
-				// Static route
-				this.routes.set(key, handler)
+					// Static route
+					this.routes.set(key, handler)
 				}
 			}
 
@@ -132,10 +135,15 @@
         // ┌──────────────────────────────── HELP ──────────────────────────────┐
 
 			private pathToRegex(path: string): RegExp {
-				// Escape special regex characters except ':'
-				const escaped = path.replace(/[.+?^${}()|[\]\\]/g, '\\$&')
+				// Escape special regex characters except ':' and '*'
+				let pattern = path.replace(/[.+?^${}()|[\]\\]/g, '\\$&')
+
 				// Replace :param with named capture groups
-				const pattern = escaped.replace(/:(\w+)/g, '(?<$1>[^/]+)')
+				pattern = pattern.replace(/:(\w+)/g, '(?<$1>[^/]+)')
+
+				// Replace * with wildcard pattern (matches everything including slashes)
+				pattern = pattern.replace(/\*/g, '.*')
+
 				return new RegExp(`^${pattern}$`)
 			}
 

@@ -65,33 +65,43 @@
 
         // ┌──────────────────────────────── HELP ──────────────────────────────┐
 
-			private log(level: string, levelNum: number, data: any, msg?: string) {
-				if (levelNum < this.level) return
+            private log(level: string, levelNum: number, data: any, msg?: string) {
+                if (levelNum < this.level) return
 
-				const safeData = data ?? {}
+                // Handle when data is a string message
+                let safeData: any
+                let safeMsg: string | undefined
 
-				if (this.pretty) {
-					this.prettyLog(level, safeData, msg)
-				} else {
-					// JSON format (unchanged for compatibility)
-					const ts = new Date().toISOString()
-					const output = {
-						timestamp	: ts,
-						level		: level.toUpperCase(),
-						message		: msg || 'No message',
-						...safeData
-					}
-					const str = JSON.stringify(output)
+                if (typeof data === 'string') {
+                    safeMsg = data
+                    safeData = {}
+                } else {
+                    safeData = data ?? {}
+                    safeMsg = msg
+                }
 
-					if (level === 'error' || level === 'fatal') {
-						console.error(str)
-					} else if (level === 'warn') {
-						console.warn(str)
-					} else {
-						console.log(str)
-					}
-				}
-			}
+                if (this.pretty) {
+                    this.prettyLog(level, safeData, safeMsg)
+                } else {
+                    // JSON format (unchanged for compatibility)
+                    const ts = new Date().toISOString()
+                    const output = {
+                        timestamp	: ts,
+                        level		: level.toUpperCase(),
+                        message		: safeMsg || 'No message',
+                        ...safeData
+                    }
+                    const str = JSON.stringify(output)
+
+                    if (level === 'error' || level === 'fatal') {
+                        console.error(str)
+                    } else if (level === 'warn') {
+                        console.warn(str)
+                    } else {
+                        console.log(str)
+                    }
+                }
+            }
 
 			private prettyLog(level: string, data: any, msg?: string) {
 				const c = this.colors
@@ -212,12 +222,12 @@
 
 			private getLevelIcon(level: string): string {
 				switch (level) {
-					case 'debug':	return '◆'
-					case 'info':	return '→'
-					case 'warn':	return '⚠'
-					case 'error':	return '✖'
-					case 'fatal':	return '☠'
-					default:		return '•'
+					case 'debug':	return '-'
+					case 'info':	return '-'
+					case 'warn':	return '-'
+					case 'error':	return '-'
+					case 'fatal':	return '-'
+					default:		return '-'
 				}
 			}
 

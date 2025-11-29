@@ -11,6 +11,7 @@
     import { SecurityManager }  from './mod/security'
     import { Logger }       	from './mod/logger'
     import * as types           from './types.d'
+    import { StaticFileServer } from './mod/static'
 
 // ╚══════════════════════════════════════════════════════════════════════════════════════╝
 
@@ -49,13 +50,13 @@
             security.cleanupCsrfTokens()
         }, 2 * 60 * 1000)
 
-        async function handleRequest(request: Request): Promise<Response> {
+        async function handleRequest(request: Request, server: any): Promise<Response> {
             const startTime = Date.now()
             const requestId = crypto.randomUUID()
             const url       = new URL(request.url)
             const path      = url.pathname
             const method    = request.method.toUpperCase()
-            const ip        = getClientIp(request)
+            const ip        = getClientIp(request, server)
 
             activeRequests.add(requestId)
 
@@ -230,6 +231,52 @@
             })
         }
 
+        // ════════ Static file serving ════════
+        if (config.static) {
+            const staticConfigs = Array.isArray(config.static) ? config.static : [config.static]
+
+            for (const staticCfg of staticConfigs) {
+                try {
+                    const staticServer = new StaticFileServer(staticCfg)
+                    const handler = staticServer.handler()
+
+                    // Register catch-all route for this static path
+                    const staticRoute: types.RouteDefinition = {
+                        method: 'GET',
+                        path: staticCfg.path === '/' ? '/*' : `${staticCfg.path}/*`,
+                        handler: handler as types.RouteHandler
+                    }
+
+                    routes.push(staticRoute)
+
+                    // FIXED: Handle root path differently
+                    if (staticCfg.path === '/') {
+                        // For root path, register both exact root and wildcard
+                        router.register('GET', '/', handler, staticRoute)
+                        router.register('HEAD', '/', handler, staticRoute)
+                        router.register('GET', '/*', handler, staticRoute)
+                        router.register('HEAD', '/*', handler, staticRoute)
+                    } else {
+                        // For prefixed paths like /public, /static
+                        router.register('GET', `${staticCfg.path}/*`, handler, staticRoute)
+                        router.register('HEAD', `${staticCfg.path}/*`, handler, staticRoute)
+                    }
+
+                    logger?.info({
+                        urlPath: staticCfg.path,
+                        directory: staticCfg.directory,
+                        maxAge: staticCfg.maxAge || 3600
+                    }, '✔ Static file serving enabled')
+                } catch (error) {
+                    logger?.error({
+                        error: String(error),
+                        path: staticCfg.path
+                    }, 'Failed to initialize static file server')
+                    throw error
+                }
+            }
+        }
+
         routes.push(healthRoute, readinessRoute)
         router.register('GET', '/health', healthRoute.handler, healthRoute)
         router.register('GET', '/readiness', readinessRoute.handler, readinessRoute)
@@ -282,21 +329,14 @@
                     }
                 }
 
-                bunServer = Bun.serve({ port, hostname, fetch: handleRequest })
+                bunServer = Bun.serve({
+                    port,
+                    hostname,
+                    fetch: (request, server) => handleRequest(request, server)
+                })
                 instance.bunServer = bunServer
 
                 const url = `http://${hostname}:${port}`
-                console.log(
-                    `→ URL:          ${url}` + `\n` +
-                    `→ Environment:  ${(process.env.NODE_ENV || 'development')}` + `\n` +
-                    `→ Routes:       ${routes.length.toString()}` + `\n` +
-                    `→ Database:     ${(dbs.size > 0 ? '✔ Connected' : '❌ None')}` + `\n` +
-                    `→ Security:     ${(config.security ? '✔ ENABLED' : '❌ Disabled')}` + `\n` +
-                        `\n` +
-                    `🔍 Health:    ${url}/health` + `\n` +
-                    `🔍 Ready:     ${url}/readiness`+  `\n`
-                )
-
                 logger?.info({ url }, 'Server started')
             },
 
@@ -592,10 +632,10 @@
         return ctx
     }
 
-    // Better IP extraction
-    function getClientIp(request: Request): string {
+    // Better IP extraction with Bun server context
+    function getClientIp(request: Request, server?: any): string {
+        // Check proxy headers first (for production behind reverse proxy)
         const forwarded = request.headers.get('x-forwarded-for')
-
         if (forwarded) {
             const ips = forwarded.split(',').map(ip => ip.trim())
             return ips[0] || 'unknown'
@@ -603,6 +643,19 @@
 
         const realIp = request.headers.get('x-real-ip')
         if (realIp) return realIp
+
+        // Get IP from Bun server context (works for localhost)
+        if (server) {
+            try {
+                const remoteAddress = server.requestIP(request)
+                if (remoteAddress?.address) {
+                    return remoteAddress.address
+                }
+            } catch (e) {
+                // Fallback if requestIP fails
+            }
+        }
+
         return 'unknown'
     }
 
@@ -694,6 +747,12 @@
         WhereCondition,
         QueryBuilder
     } from './mod/db';
+
+    // Export StaticFileServer
+    export { StaticFileServer, createStatic } from './mod/static';
+
+    // Export Static types
+    export type { StaticConfig } from './mod/static';
 
     // Default export
     export default server;

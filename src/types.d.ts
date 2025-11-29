@@ -43,6 +43,20 @@
         statusCode: number
     }
 
+    export interface StaticConfig {
+        path            : string        // URL path prefix (e.g., '/public' or '/static')
+        directory       : string        // Local directory to serve from
+        maxAge?         : number        // Cache control in seconds (default: 3600)
+        index?          : string[]      // Index files (default: ['index.html'])
+        dotfiles?       : 'allow' | 'deny' | 'ignore'  // How to handle dotfiles (default: 'deny')
+        etag?           : boolean       // Enable ETag headers (default: true)
+        lastModified?   : boolean       // Enable Last-Modified headers (default: true)
+        immutable?      : boolean       // Add immutable to cache-control (default: false)
+        extensions?     : string[]      // Try these extensions if file not found (e.g., ['html', 'htm'])
+        fallthrough?    : boolean       // Continue to next handler if file not found (default: false)
+        setHeaders?     : (ctx: AppContext, path: string) => void  // Custom header setter
+    }
+
     export interface CookieOptions {
         maxAge?         : number
         expires?        : Date
@@ -132,6 +146,9 @@
         compression?    : boolean | { threshold?: number }
 
         logging?        : boolean | { level?: 'debug' | 'info' | 'warn' | 'error'; pretty?: boolean }
+
+        // Static file serving
+        static?         : StaticConfig | StaticConfig[]
 
         routes?         : RouteDefinition[]
         middlewares?    : AppMiddleware[]

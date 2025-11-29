@@ -103,6 +103,20 @@ declare class Logger$1 {
         statusCode: number
     }
 
+    interface StaticConfig$1 {
+        path            : string        // URL path prefix (e.g., '/public' or '/static')
+        directory       : string        // Local directory to serve from
+        maxAge?         : number        // Cache control in seconds (default: 3600)
+        index?          : string[]      // Index files (default: ['index.html'])
+        dotfiles?       : 'allow' | 'deny' | 'ignore'  // How to handle dotfiles (default: 'deny')
+        etag?           : boolean       // Enable ETag headers (default: true)
+        lastModified?   : boolean       // Enable Last-Modified headers (default: true)
+        immutable?      : boolean       // Add immutable to cache-control (default: false)
+        extensions?     : string[]      // Try these extensions if file not found (e.g., ['html', 'htm'])
+        fallthrough?    : boolean       // Continue to next handler if file not found (default: false)
+        setHeaders?     : (ctx: AppContext, path: string) => void  // Custom header setter
+    }
+
     interface CookieOptions {
         maxAge?         : number
         expires?        : Date
@@ -192,6 +206,9 @@ declare class Logger$1 {
         compression?    : boolean | { threshold?: number }
 
         logging?        : boolean | { level?: 'debug' | 'info' | 'warn' | 'error'; pretty?: boolean }
+
+        // Static file serving
+        static?         : StaticConfig$1 | StaticConfig$1[]
 
         routes?         : RouteDefinition[]
         middlewares?    : AppMiddleware[]
@@ -346,6 +363,58 @@ declare function unique(col: ColumnDefinition): ColumnDefinition;
 declare function defaultValue(col: ColumnDefinition, value: SqlValue): ColumnDefinition;
 declare function references(col: ColumnDefinition, table: string, column: string): ColumnDefinition;
 
+interface StaticConfig {
+    path: string;
+    directory: string;
+    maxAge?: number;
+    index?: string[];
+    dotfiles?: 'allow' | 'deny' | 'ignore';
+    etag?: boolean;
+    lastModified?: boolean;
+    immutable?: boolean;
+    extensions?: string[];
+    fallthrough?: boolean;
+    setHeaders?: (ctx: AppContext, path: string) => void;
+}
+declare class StaticFileServer {
+    private config;
+    private resolvedDir;
+    private fileCache;
+    private readonly CACHE_MAX_SIZE;
+    constructor(config: StaticConfig);
+    /**
+     * Create request handler for static files
+     */
+    handler(): (ctx: AppContext) => Promise<Response>;
+    /**
+     * Get URL path pattern for router
+     */
+    getPathPattern(): string;
+    private resolveFilePath;
+    private isPathSafe;
+    private serveDirectory;
+    private serveFile;
+    private buildHeaders;
+    private generateEtag;
+    private getMimeType;
+    private handleNotFound;
+    /**
+     * Clear file cache
+     */
+    clearCache(): void;
+    /**
+     * Get cache statistics
+     */
+    getCacheStats(): {
+        entries: number;
+        maxSize: number;
+    };
+}
+/**
+ * Helper function to create static file server
+ */
+declare function createStatic(config: StaticConfig): StaticFileServer;
+
 declare function server(config?: ServerConfig): ServerInstance;
 
-export { type AppContext, AppError, type AppMiddleware, type AuthConfig, type ColumnDefinition, type ColumnType, type CookieOptions, type CorsConfig, type CsrfConfig, DB, type DatabaseConfig, DatabaseError, type HelmetConfig, type HttpMethod, Logger$1 as Logger, type QueryBuilder, type RateLimitConfig, RateLimitError, type RouteDefinition, type RouteHandler, Router, type SecurityConfig, SecurityManager, type ServerConfig, type ServerInstance, type SqlValue, type TableSchema, TimeoutError, ValidationError, type WhereCondition, blob, column, server as default, defaultValue, integer, notNull, numeric, primaryKey, real, references, server, table, text, unique };
+export { type AppContext, AppError, type AppMiddleware, type AuthConfig, type ColumnDefinition, type ColumnType, type CookieOptions, type CorsConfig, type CsrfConfig, DB, type DatabaseConfig, DatabaseError, type HelmetConfig, type HttpMethod, Logger$1 as Logger, type QueryBuilder, type RateLimitConfig, RateLimitError, type RouteDefinition, type RouteHandler, Router, type SecurityConfig, SecurityManager, type ServerConfig, type ServerInstance, type SqlValue, type StaticConfig, StaticFileServer, type TableSchema, TimeoutError, ValidationError, type WhereCondition, blob, column, createStatic, server as default, defaultValue, integer, notNull, numeric, primaryKey, real, references, server, table, text, unique };

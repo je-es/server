@@ -1,24 +1,24 @@
 {
-  "type": "lib",
-  "template": "pure",
-  "pm": "bun",
-  "repo": {
-    "org": "je-es",
-    "name": "server",
-    "version": "0.0.4",
-    "desc": "Build faster, Sleep better !",
-    "url": "https://github.com/je-es/server",
-    "kw": [
-      "je-es",
-      "server"
-    ],
-    "license": "MIT"
-  },
-  "author": {
-    "id": "maysara-elshewehy",
-    "name": "Maysara",
-    "url": "https://github.com/maysara-elshewehy",
-    "email": "maysara.elshewehy@gmail.com"
-  },
-  "createdAt": "2025-11-27T08:31:02.855Z"
+    "type"              : "lib",
+    "template"          : "pure",
+    "pm"                : "bun",
+
+    "repo"              : {
+        "org"           : "je-es",
+        "name"          : "server",
+        "version"       : "0.0.5",
+        "desc"          : "Build faster, Sleep better !",
+        "url"           : "https://github.com/je-es/server",
+        "kw"            : [ "je-es", "server" ],
+        "license"       : "MIT"
+    },
+
+    "author"            : {
+        "id"            : "maysara-elshewehy",
+        "name"          : "Maysara",
+        "url"           : "https://github.com/maysara-elshewehy",
+        "email"         : "maysara.elshewehy@gmail.com"
+    },
+
+    "createdAt"         : "2025-11-27T08:31:02.855Z"
 }

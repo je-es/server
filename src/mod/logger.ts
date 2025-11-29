@@ -1,4 +1,4 @@
-// lib/logger.ts
+// src/mod/logger.ts
 //
 // Developed with ❤️ by Maysara.
 

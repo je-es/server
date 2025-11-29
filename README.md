@@ -8,7 +8,7 @@
 </div>
 
 <div align="center">
-    <img src="https://img.shields.io/badge/v-0.0.4-black"/>
+    <img src="https://img.shields.io/badge/v-0.0.5-black"/>
     <a href="https://github.com/maysara-elshewehy">
     </a>
     <a href="https://github.com/je-es/server"> <img src="https://img.shields.io/badge/🔥-@je--es/server-black"/> </a>
@@ -95,39 +95,36 @@
     - ### With Database
 
         ```typescript
-        import { server, sqliteTable, integer, text } from '@je-es/server';
+        import { server, table, integer, text, primaryKey, notNull } from '@je-es/server';
 
-        // Define your schema - all Drizzle types exported from @je-es/server!
-        const users = sqliteTable('users', {
-            id      : integer('id').primaryKey(),
-            name    : text('name').notNull(),
-            email   : text('email').notNull()
-        });
+        // Define your schema using the built-in schema builder
+        const users = table('users', [
+            primaryKey(integer('id'), true),    // auto-increment primary key
+            notNull(text('name')),
+            notNull(text('email'))
+        ]);
 
         const app = server({
             port    : 3000,
             database: {
-                connection  : './my_app.db', // File-based SQLite database
+                connection  : './my_app.db',    // File-based SQLite database
                 schema      : { users }
             },
             routes  : [
                 {
                     method  : 'GET',
                     path    : '/users',
-                    handler : async (c) => {
-                        const allUsers = await c.db.select().from(users);
+                    handler : (c) => {
+                        const allUsers = c.db.all('users');
                         return c.json(allUsers);
                     }
                 },
                 {
                     method  : 'POST',
                     path    : '/users',
-                    handler : async (c) => {
-                        const newUser = await c.db
-                            .insert(users)
-                            .values(c.body)
-                            .returning();
-                        return c.json(newUser[0]);
+                    handler : (c) => {
+                        const newUser = c.db.insert('users', c.body);
+                        return c.json(newUser);
                     }
                 }
             ]
@@ -198,8 +195,7 @@
 
             // Database
             database: {
-                type        : 'bun-sql',
-                connection  : ':memory:',
+                connection  : ':memory:',   // or file path like './app.db'
                 schema      : {}
             },
 
@@ -436,110 +432,334 @@
                 {
                     method  : 'GET',
                     path    : '/data',
-                    handler : async (c) => {
+                    handler : (c) => {
                         // Access default database
-                        const users = await c.db.select().from(usersTable);
+                        const users = c.db.all('users');
 
                         // Access named databases
                         const mainDb = app.db.get('default');
                         const analyticsDb = app.db.get('analytics');
 
-                        return c.json({ users });
+                        const mainData = mainDb.all('some_table');
+                        const analyticsData = analyticsDb.all('analytics_table');
+
+                        return c.json({ users, mainData, analyticsData });
                     }
                 }
             ]
         });
         ```
 
-    - ### Complete Database Example
+    - ### Schema Definition
 
         ```typescript
         import {
             server,
-            sqliteTable,
+            table,
             integer,
             text,
             real,
-            eq,
-            and,
-            like
+            blob,
+            numeric,
+            primaryKey,
+            notNull,
+            unique,
+            defaultValue,
+            references
         } from '@je-es/server';
 
-        // Define schema with all column types
-        const products = sqliteTable('products', {
-            id: integer('id').primaryKey(),
-            name: text('name').notNull(),
-            description: text('description'),
-            price: real('price').notNull(),
-            stock: integer('stock').default(0)
-        });
+        // Define products table
+        const products = table('products', [
+            primaryKey(integer('id'), true),        // Auto-increment primary key
+            notNull(text('name')),
+            text('description'),
+            notNull(real('price')),
+            defaultValue(integer('stock'), 0)
+        ]);
+
+        // Define orders table with foreign key
+        const orders = table('orders', [
+            primaryKey(integer('id'), true),
+            notNull(integer('product_id')),
+            references(integer('product_id'), 'products', 'id'),
+            notNull(integer('quantity')),
+            defaultValue(text('status'), 'pending')
+        ]);
 
         const app = server({
             database: {
                 connection: './store.db',
-                schema: { products }
+                schema: { products, orders }
+            }
+        });
+        ```
+
+    - ### Database Operations
+
+        ```typescript
+        import { server, table, integer, text, primaryKey, notNull } from '@je-es/server';
+
+        const users = table('users', [
+            primaryKey(integer('id'), true),
+            notNull(text('name')),
+            notNull(text('email')),
+            integer('age')
+        ]);
+
+        const app = server({
+            database: {
+                connection: './app.db',
+                schema: { users }
             },
             routes  : [
+                // Get all records
                 {
                     method  : 'GET',
-                    path    : '/products',
-                    handler : async (c) => {
-                        // Query with filters
-                        const allProducts = await c.db
-                            .select()
-                            .from(products)
-                            .where(and(
-                                eq(products.stock, 0),
-                                like(products.name, '%laptop%')
-                            ));
-
-                        return c.json(allProducts);
+                    path    : '/users',
+                    handler : (c) => {
+                        const allUsers = c.db.all('users');
+                        return c.json(allUsers);
                     }
                 },
+
+                // Find by ID
+                {
+                    method  : 'GET',
+                    path    : '/users/:id',
+                    handler : (c) => {
+                        const user = c.db.findById('users', parseInt(c.params.id));
+                        if (!user) return c.status(404).json({ error: 'Not found' });
+                        return c.json(user);
+                    }
+                },
+
+                // Find with conditions
+                {
+                    method  : 'GET',
+                    path    : '/users/search',
+                    handler : (c) => {
+                        const users = c.db.find('users', {
+                            name: c.query.name
+                        });
+                        return c.json(users);
+                    }
+                },
+
+                // Insert
                 {
                     method  : 'POST',
-                    path    : '/products',
-                    handler : async (c) => {
-                        // Insert new product
-                        const newProduct = await c.db
-                            .insert(products)
-                            .values(c.body)
-                            .returning();
-
-                        return c.json(newProduct[0]);
+                    path    : '/users',
+                    handler : (c) => {
+                        const newUser = c.db.insert('users', c.body);
+                        return c.json(newUser);
                     }
                 },
+
+                // Update
                 {
                     method  : 'PUT',
-                    path    : '/products/:id',
-                    handler : async (c) => {
-                        // Update product
-                        const updated = await c.db
-                            .update(products)
-                            .set(c.body)
-                            .where(eq(products.id, parseInt(c.params.id)))
-                            .returning();
-
-                        return c.json(updated[0]);
+                    path    : '/users/:id',
+                    handler : (c) => {
+                        const updated = c.db.update(
+                            'users',
+                            parseInt(c.params.id),
+                            c.body
+                        );
+                        if (!updated) return c.status(404).json({ error: 'Not found' });
+                        return c.json(updated);
                     }
                 },
+
+                // Delete
                 {
                     method  : 'DELETE',
-                    path    : '/products/:id',
-                    handler : async (c) => {
-                        // Delete product
-                        await c.db
-                            .delete(products)
-                            .where(eq(products.id, parseInt(c.params.id)));
-
+                    path    : '/users/:id',
+                    handler : (c) => {
+                        c.db.delete('users', parseInt(c.params.id));
                         return c.json({ deleted: true });
                     }
                 }
             ]
         });
+        ```
 
-        await app.start();
-        // All data saved to ./store.db and persists across restarts!
+    - ### Query Builder
+
+        ```typescript
+        const app = server({
+            database: {
+                connection: './app.db',
+                schema: { users }
+            },
+            routes  : [
+                {
+                    method  : 'GET',
+                    path    : '/advanced-search',
+                    handler : (c) => {
+                        // Complex queries with query builder
+                        const results = c.db.query()
+                            .select(['name', 'email', 'age'])
+                            .from('users')
+                            .where({
+                                column: 'age',
+                                operator: '>=',
+                                value: 18
+                            })
+                            .and({
+                                column: 'name',
+                                operator: 'LIKE',
+                                value: '%John%'
+                            })
+                            .orderBy('age', 'DESC')
+                            .limit(10)
+                            .offset(0)
+                            .execute();
+
+                        return c.json(results);
+                    }
+                },
+
+                // Multiple where conditions
+                {
+                    method  : 'GET',
+                    path    : '/filter',
+                    handler : (c) => {
+                        const users = c.db.query()
+                            .select()
+                            .from('users')
+                            .where([
+                                { column: 'age', operator: '>', value: 25 },
+                                { column: 'age', operator: '<', value: 50 }
+                            ])
+                            .execute();
+
+                        return c.json(users);
+                    }
+                },
+
+                // OR conditions
+                {
+                    method  : 'GET',
+                    path    : '/or-search',
+                    handler : (c) => {
+                        const users = c.db.query()
+                            .select()
+                            .from('users')
+                            .where({ column: 'name', operator: '=', value: 'John' })
+                            .or({ column: 'name', operator: '=', value: 'Jane' })
+                            .execute();
+
+                        return c.json(users);
+                    }
+                },
+
+                // Get single result
+                {
+                    method  : 'GET',
+                    path    : '/first-user',
+                    handler : (c) => {
+                        const user = c.db.query()
+                            .select()
+                            .from('users')
+                            .limit(1)
+                            .executeOne();
+
+                        return c.json(user);
+                    }
+                }
+            ]
+        });
+        ```
+
+    - ### Transactions
+
+        ```typescript
+        const app = server({
+            database: {
+                connection: './app.db',
+                schema: { users, orders }
+            },
+            routes  : [
+                {
+                    method  : 'POST',
+                    path    : '/place-order',
+                    handler : (c) => {
+                        try {
+                            c.db.transaction((db) => {
+                                // Insert order
+                                const order = db.insert('orders', {
+                                    product_id: c.body.productId,
+                                    quantity: c.body.quantity
+                                });
+
+                                // Update product stock
+                                const product = db.findById('products', c.body.productId);
+                                db.update('products', c.body.productId, {
+                                    stock: product.stock - c.body.quantity
+                                });
+                            });
+
+                            return c.json({ success: true });
+                        } catch (error) {
+                            return c.status(500).json({
+                                error: 'Transaction failed'
+                            });
+                        }
+                    }
+                }
+            ]
+        });
+        ```
+
+    - ### Raw SQL
+
+        ```typescript
+        const app = server({
+            database: {
+                connection: './app.db',
+                schema: { users }
+            },
+            routes  : [
+                {
+                    method  : 'GET',
+                    path    : '/custom-query',
+                    handler : (c) => {
+                        // Execute raw SQL
+                        const results = c.db.raw(
+                            'SELECT * FROM users WHERE age > ? AND name LIKE ?',
+                            [25, '%John%']
+                        );
+
+                        return c.json(results);
+                    }
+                },
+
+                {
+                    method  : 'GET',
+                    path    : '/single-result',
+                    handler : (c) => {
+                        // Get single row
+                        const user = c.db.rawOne(
+                            'SELECT * FROM users WHERE id = ?',
+                            [1]
+                        );
+
+                        return c.json(user);
+                    }
+                },
+
+                {
+                    method  : 'POST',
+                    path    : '/execute-sql',
+                    handler : (c) => {
+                        // Execute without return
+                        c.db.exec('DELETE FROM users WHERE age < 18');
+
+                        return c.json({ success: true });
+                    }
+                }
+            ]
+        });
         ```
 
 <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>

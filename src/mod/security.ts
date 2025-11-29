@@ -1,4 +1,4 @@
-// lib/security.ts
+// src/mod/security.ts
 //
 // Developed with ❤️ by Maysara.
 

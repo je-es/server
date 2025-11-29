@@ -1,4 +1,4 @@
-// main.ts
+// src/main.ts
 //
 // Developed with ❤️ by Maysara.
 
@@ -6,7 +6,7 @@
 
 // ╔════════════════════════════════════════ PACK ════════════════════════════════════════╗
 
-    import { drizzle }          from 'drizzle-orm/bun-sql'
+    import { DB }               from './mod/db'
     import { Router }           from './mod/router'
     import { SecurityManager }  from './mod/security'
     import { Logger }       	from './mod/logger'
@@ -243,65 +243,39 @@
             bunServer   : null,
 
             async start() {
-                // Initialize databases with Bun SQL support
+                // Initialize databases with our custom DB solution
                 if (config.database) {
                     const dbConfigs = Array.isArray(config.database) ? config.database : [config.database]
                     for (const dbCfg of dbConfigs) {
                         const dbName = dbCfg.name || 'default'
 
                         try {
-                            // fallback to bun-sql
-                            if(!dbCfg.type) { dbCfg.type = 'bun-sql' }
+                            if (typeof dbCfg.connection === 'string') {
+                                // Create DB instance with connection string
+                                const db = new DB(dbCfg.connection)
 
-                            if (dbCfg.type === 'bun-sql') {
-                                // Bun's native SQL database
-                                if (typeof dbCfg.connection === 'string') {
-                                    // Create Drizzle instance directly with connection string
-                                    const db = drizzle(dbCfg.connection, { schema: dbCfg.schema })
-                                    dbs.set(dbName, db)
-
-                                    logger?.info({
-                                        name: dbName,
-                                        connection: 'string'
-                                    }, '✅ Bun SQL connected')
-                                } else if (typeof dbCfg.connection === 'function') {
-                                    // SQL is actually a function in Bun, not a class
-                                    // Pass the SQL function directly to Drizzle
-                                    const db = drizzle({
-                                        client: dbCfg.connection,
-                                        schema: dbCfg.schema
-                                    })
-                                    dbs.set(dbName, db)
-
-                                    logger?.info({
-                                        name: dbName,
-                                        connection: 'function'
-                                    }, '✅ Bun SQL connected')
-                                } else if (dbCfg.connection !== null && dbCfg.connection !== undefined && typeof dbCfg.connection === 'object') {
-                                    // Also support object connections
-                                    const db = drizzle({
-                                        client: dbCfg.connection,
-                                        schema: dbCfg.schema
-                                    })
-                                    dbs.set(dbName, db)
-
-                                    logger?.info({
-                                        name: dbName,
-                                        connection: 'object'
-                                    }, '✅ Bun SQL connected')
-                                } else {
-                                    // Better error message with actual type
-                                    const actualType = typeof dbCfg.connection
-                                    throw new Error(`Bun SQL connection must be a connection string, SQL function, or SQL instance (got ${actualType})`)
+                                // Define schemas if provided
+                                if (dbCfg.schema && typeof dbCfg.schema === 'object') {
+                                    for (const [tableName, tableSchema] of Object.entries(dbCfg.schema)) {
+                                        if (tableSchema && typeof tableSchema === 'object') {
+                                            db.defineSchema(tableSchema as any)
+                                        }
+                                    }
                                 }
+
+                                dbs.set(dbName, db)
+
+                                logger?.info({
+                                    name: dbName,
+                                    connection: dbCfg.connection
+                                }, '✅ Database connected')
                             } else {
-                                throw new Error(`Unsupported database type: ${dbCfg.type}`)
+                                throw new Error(`Database connection must be a string path (got ${typeof dbCfg.connection})`)
                             }
                         } catch (error) {
                             logger?.error({
                                 error: String(error),
-                                name: dbName,
-                                type: dbCfg.type
+                                name: dbName
                             }, 'Failed to connect to database')
                             throw error
                         }
@@ -356,8 +330,8 @@
                 // Close database connections
                 for (const [name, db] of dbs.entries()) {
                     try {
-                        if (db?.$client?.close) {
-                            db.$client.close()
+                        if (db && typeof db.close === 'function') {
+                            db.close()
                         }
                         logger?.info({ name }, 'Database closed')
                     } catch (e) {
@@ -688,58 +662,34 @@
     // Export Router for advanced use cases
     export { Router };
 
-    // Default export
-    export default server;
-
-    // ════════════════════ Drizzle ORM - Bun SQL (SQLite) ════════════════════
-    // Re-export Drizzle ORM types for Bun SQL (SQLite)
+    // Export DB and database helpers
     export {
-        sqliteTable,
+        DB,
+        table,
+        column,
         integer,
         text,
         real,
         blob,
         numeric,
         primaryKey,
-        uniqueIndex,
-        index,
-        foreignKey,
-        check
-    } from 'drizzle-orm/sqlite-core';
+        notNull,
+        unique,
+        defaultValue,
+        references
+    } from './mod/db';
 
-    // ════════════════════ Drizzle ORM - Common Operators ════════════════════
-    // Re-export common Drizzle operators and utilities
-    export {
-        eq,         // Equal
-        ne,         // Not equal
-        and,        // AND condition
-        or,         // OR condition
-        not,        // NOT condition
-        gt,         // Greater than
-        gte,        // Greater than or equal
-        lt,         // Less than
-        lte,        // Less than or equal
-        like,       // LIKE pattern matching
-        ilike,      // Case-insensitive LIKE
-        inArray,    // IN array
-        notInArray, // NOT IN array
-        isNull,     // IS NULL
-        isNotNull,  // IS NOT NULL
-        exists,     // EXISTS subquery
-        notExists,  // NOT EXISTS subquery
-        between,    // BETWEEN range
-        notBetween, // NOT BETWEEN range
-        sql,        // Raw SQL
-        asc,        // Ascending order
-        desc        // Descending order
-    } from 'drizzle-orm';
+    // Export DB types
+    export type {
+        ColumnType,
+        SqlValue,
+        ColumnDefinition,
+        TableSchema,
+        WhereCondition,
+        QueryBuilder
+    } from './mod/db';
 
-    // ════════════════════ Drizzle ORM - Relations ════════════════════
-    // Re-export relations helpers
-    export {
-        relations,
-        One,
-        Many
-    } from 'drizzle-orm';
+    // Default export
+    export default server;
 
 // ╚══════════════════════════════════════════════════════════════════════════════════════╝

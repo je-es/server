@@ -1,6 +1,3 @@
-export { blob, check, foreignKey, index, integer, numeric, primaryKey, real, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
-export { Many, One, and, asc, between, desc, eq, exists, gt, gte, ilike, inArray, isNotNull, isNull, like, lt, lte, ne, not, notBetween, notExists, notInArray, or, relations, sql } from 'drizzle-orm';
-
 declare class Router {
     private routes;
     private regexRoutes;
@@ -122,11 +119,9 @@ declare class Logger$1 {
     }
 
     interface DatabaseConfig {
-        type?           : 'bun-sql' // default
         name?           : string
-        connection      : string | any
-        schema?         : any
-        poolSize?       : number
+        connection      : string    // File path or ':memory:'
+        schema?         : Record<string, any>
         timeout?        : number
     }
 
@@ -257,6 +252,92 @@ declare class Logger$1 {
         }
     }
 
+type ColumnType = 'INTEGER' | 'TEXT' | 'REAL' | 'BLOB' | 'NUMERIC';
+type SqlValue = string | number | boolean | null | Uint8Array;
+interface ColumnDefinition {
+    name: string;
+    type: ColumnType;
+    primaryKey?: boolean;
+    autoIncrement?: boolean;
+    notNull?: boolean;
+    unique?: boolean;
+    default?: SqlValue;
+    references?: {
+        table: string;
+        column: string;
+    };
+}
+interface TableSchema {
+    name: string;
+    columns: ColumnDefinition[];
+    indexes?: {
+        name: string;
+        columns: string[];
+        unique?: boolean;
+    }[];
+}
+interface WhereCondition {
+    column: string;
+    operator: '=' | '!=' | '>' | '<' | '>=' | '<=' | 'LIKE' | 'IN' | 'IS NULL' | 'IS NOT NULL';
+    value?: SqlValue | SqlValue[];
+}
+interface QueryBuilder {
+    select: (columns?: string[]) => QueryBuilder;
+    from: (table: string) => QueryBuilder;
+    where: (condition: WhereCondition | WhereCondition[]) => QueryBuilder;
+    and: (condition: WhereCondition) => QueryBuilder;
+    or: (condition: WhereCondition) => QueryBuilder;
+    orderBy: (column: string, direction?: 'ASC' | 'DESC') => QueryBuilder;
+    limit: (count: number) => QueryBuilder;
+    offset: (count: number) => QueryBuilder;
+    insert: (table: string, data: Record<string, SqlValue>) => QueryBuilder;
+    update: (table: string, data: Record<string, SqlValue>) => QueryBuilder;
+    delete: (table: string) => QueryBuilder;
+    execute: () => any[];
+    executeOne: () => any | null;
+    executeRaw: (sql: string, params?: SqlValue[]) => any[];
+    raw: (sql: string, params?: SqlValue[]) => QueryBuilder;
+}
+declare class DB {
+    private db;
+    private schemas;
+    private currentQuery;
+    private currentParams;
+    constructor(path?: string);
+    close(): void;
+    defineSchema(schema: TableSchema): void;
+    getSchema(tableName: string): TableSchema | undefined;
+    listTables(): string[];
+    dropTable(tableName: string): void;
+    query(): QueryBuilder;
+    find(table: string, conditions: Record<string, SqlValue>): any[];
+    findOne(table: string, conditions: Record<string, SqlValue>): any | null;
+    findById(table: string, id: number | string): any | null;
+    all(table: string): any[];
+    insert(table: string, data: Record<string, SqlValue>): any;
+    update(table: string, id: number | string, data: Record<string, SqlValue>): any | null;
+    delete(table: string, id: number | string): boolean;
+    transaction(callback: (db: DB) => void): void;
+    exec(sql: string): void;
+    raw(sql: string, params?: SqlValue[]): any[];
+    rawOne(sql: string, params?: SqlValue[]): any | null;
+    private reset;
+    private createQueryBuilder;
+    private generateCreateTableSQL;
+}
+declare function table(name: string, columns: ColumnDefinition[]): TableSchema;
+declare function column(name: string, type: ColumnType): ColumnDefinition;
+declare function integer(name: string): ColumnDefinition;
+declare function text(name: string): ColumnDefinition;
+declare function real(name: string): ColumnDefinition;
+declare function blob(name: string): ColumnDefinition;
+declare function numeric(name: string): ColumnDefinition;
+declare function primaryKey(col: ColumnDefinition, autoIncrement?: boolean): ColumnDefinition;
+declare function notNull(col: ColumnDefinition): ColumnDefinition;
+declare function unique(col: ColumnDefinition): ColumnDefinition;
+declare function defaultValue(col: ColumnDefinition, value: SqlValue): ColumnDefinition;
+declare function references(col: ColumnDefinition, table: string, column: string): ColumnDefinition;
+
 declare function server(config?: ServerConfig): ServerInstance;
 
-export { type AppContext, AppError, type AppMiddleware, type AuthConfig, type CookieOptions, type CorsConfig, type CsrfConfig, type DatabaseConfig, DatabaseError, type HelmetConfig, type HttpMethod, Logger$1 as Logger, type RateLimitConfig, RateLimitError, type RouteDefinition, type RouteHandler, Router, type SecurityConfig, SecurityManager, type ServerConfig, type ServerInstance, TimeoutError, ValidationError, server as default, server };
+export { type AppContext, AppError, type AppMiddleware, type AuthConfig, type ColumnDefinition, type ColumnType, type CookieOptions, type CorsConfig, type CsrfConfig, DB, type DatabaseConfig, DatabaseError, type HelmetConfig, type HttpMethod, Logger$1 as Logger, type QueryBuilder, type RateLimitConfig, RateLimitError, type RouteDefinition, type RouteHandler, Router, type SecurityConfig, SecurityManager, type ServerConfig, type ServerInstance, type SqlValue, type TableSchema, TimeoutError, ValidationError, type WhereCondition, blob, column, server as default, defaultValue, integer, notNull, numeric, primaryKey, real, references, server, table, text, unique };

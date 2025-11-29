@@ -65,11 +65,9 @@
     }
 
     export interface DatabaseConfig {
-        type?           : 'bun-sql' // default
         name?           : string
-        connection      : string | any
-        schema?         : any
-        poolSize?       : number
+        connection      : string    // File path or ':memory:'
+        schema?         : Record<string, any>
         timeout?        : number
     }
 

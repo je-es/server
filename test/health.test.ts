@@ -81,15 +81,12 @@
 		beforeAll(async () => {
 			await new Promise(resolve => setTimeout(resolve, 1600))
 
-			const { Database } = require('bun:sqlite')
-			const sqlite = new Database(':memory:')
-
 			app = server({
-			port: 3216,
-			logging: false,
-			database: {
-				connection: sqlite
-			}
+				port: 3216,
+				logging: false,
+				database: {
+					connection: ':memory:' // Use string path instead of Database object
+				}
 			})
 
 			await app.start()

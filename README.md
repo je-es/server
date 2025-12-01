@@ -105,17 +105,6 @@
         await app.start();
         ```
 
-        > use `space start` to run your server.
-
-        ```typescript
-        > space start
-
-        → URL:          http://localhost:3000
-        → Environment:  test
-        → Routes:       N
-        ...
-        ```
-
     <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
 
     - ### With Database

@@ -3,41 +3,55 @@
 <br>
 <div align="center">
     <p>
-        <img src="./assets/img/logo.png" alt="logo" style="" height="70" />
+        <img src="./assets/img/logo.png" alt="logo" style="" height="80" />
     </p>
 </div>
 
 <div align="center">
-    <img src="https://img.shields.io/badge/v-0.1.0-black"/>
+    <img src="https://img.shields.io/badge/v-1.1.0-black"/>
     <a href="https://github.com/maysara-elshewehy">
     </a>
-    <a href="https://github.com/je-es/server"> <img src="https://img.shields.io/badge/🔥-@je--es/server-black"/> </a>
+    <a href="https://github.com/je-es"> <img src="https://img.shields.io/badge/@-je--es-black"/> </a>
 </div>
-
-<div align="center">
-    <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/>
-    <br>
-</div>
+<br>
 
 <!-- ╚═════════════════════════════════════════════════════════════════╝ -->
 
 
 
+
 <!-- ╔══════════════════════════════ DOC ══════════════════════════════╗ -->
+
 
 - ## Quick Start 🔥
 
-    - ### commands
+    > _**The simplest, fastest, most organized and stable way to build servers.**_
 
-        ```bash
-        # install
-        space i @je-es/server
+    > _We prefer to use [`space`](https://github.com//solution-lib/space) with [`@solution-dist/server`](https://github.com/solution-dist/server) for a better experience._
 
-        # manage
-        space test              # run server tests
-        space build             # build server files to ./dist
-        space start             # start server
-        ```
+    ```bash
+    space init <server-name> -t server
+    ```
+
+    ```bash
+    cd <server-name>
+    space install
+    ```
+
+    ```bash
+    # example
+        > space start
+
+    # output
+        16:16:31 ✓ Server started at http://localhost:3000
+        16:17:25 GET / 200 4ms
+        ...
+    ```
+
+    <br>
+
+
+- ## Examples
 
     - ### Basic Server
 
@@ -92,6 +106,8 @@
         ...
         ```
 
+    <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
+
     - ### With Database
 
         ```typescript
@@ -134,6 +150,8 @@
         // Data persists in ./my_app.db file!
         ```
 
+    <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
+
     - ### With Security
 
         ```typescript
@@ -168,7 +186,7 @@
         await app.start();
         ```
 
-<div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
+<br>
 
 - ## API Reference
 
@@ -219,6 +237,8 @@
         await app.start();
         ```
 
+    <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
+
     - ### Route Definition
 
         ```typescript
@@ -257,6 +277,8 @@
             }
         };
         ```
+
+    <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
 
     - ### Context API
 
@@ -315,7 +337,7 @@
         }
         ```
 
-<div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
+<br>
 
 - ## Security Features
 
@@ -336,6 +358,8 @@
             }
         });
         ```
+
+    <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
 
     - ### CORS Configuration
 
@@ -363,6 +387,8 @@
         });
         ```
 
+    <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
+
     - ### CSRF Protection
 
         ```typescript
@@ -376,6 +402,8 @@
         // Validate CSRF token
         const isValid = security.validateCsrfToken(token, 'session-id');
         ```
+
+    <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
 
     - ### Input Sanitization
 
@@ -393,7 +421,7 @@
         // Output: ''; DROP TABLE users--
         ```
 
-<div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
+<br>
 
 - ## Database Support
 
@@ -411,6 +439,8 @@
 
         // Access in routes via c.db
         ```
+
+    <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
 
     - ### Multiple Databases
 
@@ -449,6 +479,8 @@
             ]
         });
         ```
+
+    <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
 
     - ### Schema Definition
 
@@ -493,6 +525,8 @@
             }
         });
         ```
+
+    <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
 
     - ### Database Operations
 
@@ -583,6 +617,8 @@
         });
         ```
 
+    <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
+
     - ### Query Builder
 
         ```typescript
@@ -671,6 +707,8 @@
         });
         ```
 
+    <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
+
     - ### Transactions
 
         ```typescript
@@ -710,6 +748,8 @@
             ]
         });
         ```
+
+    <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
 
     - ### Raw SQL
 
@@ -762,7 +802,7 @@
         });
         ```
 
-<div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
+<br>
 
 - ## Advanced Features
 
@@ -791,6 +831,8 @@
             }
         };
         ```
+
+    <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
 
     - ### Cookie Management
 
@@ -838,6 +880,8 @@
         });
         ```
 
+    <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
+
     - ### Dynamic Routing
 
         ```typescript
@@ -873,6 +917,8 @@
         });
         ```
 
+    <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
+
     - ### Health Checks
 
         ```typescript
@@ -899,6 +945,8 @@
         }
         ```
 
+    <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
+
     - ### Graceful Shutdown
 
         ```typescript
@@ -923,6 +971,8 @@
             process.exit(0);
         });
         ```
+
+    <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
 
     - ### Dynamic Routes
 
@@ -951,6 +1001,8 @@
         console.log(routes);
         ```
 
+    <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
+
     - ### Request Timeout
 
         ```typescript
@@ -969,6 +1021,8 @@
             ]
         });
         ```
+
+    <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
 
     - ### Custom Error Handling
 
@@ -1010,11 +1064,9 @@
 <!-- ╔══════════════════════════════ END ══════════════════════════════╗ -->
 
 <br>
-<div align="center">
-    <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/>
-    <br>
-</div>
-<br>
+
+---
+
 <div align="center">
     <a href="https://github.com/solution-lib/space"><img src="https://img.shields.io/badge/by-Space-black"/></a>
 </div>

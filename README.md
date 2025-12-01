@@ -8,7 +8,7 @@
 </div>
 
 <div align="center">
-    <img src="https://img.shields.io/badge/v-1.1.0-black"/>
+    <img src="https://img.shields.io/badge/v-0.1.2-black"/>
     <a href="https://github.com/maysara-elshewehy">
     </a>
     <a href="https://github.com/je-es"> <img src="https://img.shields.io/badge/@-je--es-black"/> </a>
@@ -22,31 +22,41 @@
 
 <!-- ╔══════════════════════════════ DOC ══════════════════════════════╗ -->
 
-
 - ## Quick Start 🔥
 
     > _**The simplest, fastest, most organized and stable way to build servers.**_
 
     > _We prefer to use [`space`](https://github.com//solution-lib/space) with [`@solution-dist/server`](https://github.com/solution-dist/server) for a better experience._
 
-    ```bash
-    space init <server-name> -t server
-    ```
+    - #### Setup
 
-    ```bash
-    cd <server-name>
-    space install
-    ```
+        > install [`space`](https://github.com/solution-lib/space) first.
 
-    ```bash
-    # example
-        > space start
+        - ##### Create
 
-    # output
-        16:16:31 ✓ Server started at http://localhost:3000
-        16:17:25 GET / 200 4ms
-        ...
-    ```
+            ```bash
+            space init <name> -t server # This will clone a ready-to-use repo and make some changes to suit your server.
+            cd <name>                   # Go to the project directory
+            space install               # Install the dependencies
+            ```
+
+        - ##### Manage
+
+            ```bash
+            space build                 # To build your server
+            space test                  # To test  your server
+            space start                 # To start your server
+            ```
+
+            ```bash
+            # example
+             > space start
+
+            # output
+             16:16:31 ✓ Server started at http://localhost:3000
+             16:17:25 GET / 200 4ms
+             ...
+            ```
 
     <br>
 

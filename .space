@@ -6,7 +6,7 @@
     "repo"              : {
         "org"           : "je-es",
         "name"          : "server",
-        "version"       : "0.1.1",
+        "version"       : "0.1.2",
         "desc"          : "Build faster, Sleep better !",
         "url"           : "https://github.com/je-es/server",
         "kw"            : [ "je-es", "server" ],

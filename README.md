@@ -8,10 +8,13 @@
 </div>
 
 <div align="center">
-    <img src="https://img.shields.io/badge/v-0.1.2-black"/>
-    <a href="https://github.com/maysara-elshewehy">
-    </a>
-    <a href="https://github.com/je-es"> <img src="https://img.shields.io/badge/@-je--es-black"/> </a>
+    <img src="https://img.shields.io/badge/v-0.1.3-black"/>
+    <img src="https://img.shields.io/badge/🔥-@je--es-black"/>
+    <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
+    <img src="https://github.com/je-es/server/actions/workflows/ci.yml/badge.svg" alt="CI" />
+    <img src="https://img.shields.io/badge/coverage-100%25-brightgreen" alt="Test Coverage" />
+    <img src="https://img.shields.io/github/issues/je-es/server?style=flat" alt="Github Repo Issues" />
+    <img src="https://img.shields.io/github/stars/je-es/server?style=social" alt="GitHub Repo stars" />
 </div>
 <br>
 
@@ -24,181 +27,175 @@
 
 - ## Quick Start 🔥
 
-    > _**The simplest, fastest, most organized and stable way to build servers.**_
+    > _**The simplest, fastest, and most organized way to build production-ready servers with Bun.**_
 
     > _We prefer to use [`space`](https://github.com//solution-lib/space) with [`@solution-dist/server`](https://github.com/solution-dist/server) for a better experience._
 
-    - #### Setup
+    - ### Setup
 
         > install [`space`](https://github.com/solution-lib/space) first.
 
-        - ##### Create
+        - #### Create
 
             ```bash
-            space init <name> -t server # This will clone a ready-to-use repo and make some changes to suit your server.
-            cd <name>                   # Go to the project directory
-            space install               # Install the dependencies
+            > space init <name> -t server # This will clone a ready-to-use repo and make some changes to suit your server.
+            > cd <name>                   # Go to the project directory
+            > space install               # Install the dependencies
             ```
 
-        - ##### Manage
+        - #### Manage
 
             ```bash
-            space build                 # To build your server
-            space test                  # To test  your server
-            space start                 # To start your server
+            > space lint
+            > space build
+            > space test
+            > space start
+            ```
+
+        - #### Usage
+
+            ```typescript
+            import { server } from '@je-es/server';
+
+            const app = server({
+                port    : 3000,
+                routes  : [
+                    {
+                        method  : 'GET',
+                        path    : '/',
+                        handler : (c) => c.json({ message: 'Hello World!' })
+                    }
+                ]
+            });
+
+            await app.start();
             ```
 
             ```bash
-            # example
              > space start
-
-            # output
-             16:16:31 ✓ Server started at http://localhost:3000
-             16:17:25 GET / 200 4ms
+             16:16:31 Server started at http://localhost:3000
+             16:17:25 GET / 200 1ms
              ...
             ```
 
-    <br>
-
+    <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
 
 - ## Examples
 
     - ### Basic Server
 
         ```typescript
-        // import
         import { server } from '@je-es/server';
-        ```
 
-        ```typescript
-        // create
         const app = server({
             port    : 3000,
+            logging : { level: 'info', pretty: true },
             routes  : [
                 {
                     method  : 'GET',
-                    path    : '/',
-                    handler : (c) => c.json({ message: 'Hello World!' })
-                },
-                {
-                    method  : 'GET',
                     path    : '/users/:id',
-                    handler : (c) => {
-                        const userId = c.params.id;
-                        return c.json({ userId, name: 'John Doe' });
-                    }
+                    handler : (c) => c.json({
+                        userId      : c.params.id,
+                        ip          : c.ip,
+                        requestId   : c.requestId
+                    })
                 },
                 {
-                    method  : 'POST',
-                    path    : '/users',
-                    handler : (c) => {
-                        const userData = c.body;
-                        return c.json({ created: true, data: userData });
-                    }
+                    method          : 'POST',
+                    path            : '/users',
+                    handler         : (c) => c.status(201).json({
+                        created : true,
+                        data    : c.body
+                    })
                 }
             ]
         });
-        ```
 
-        ```typescript
-        // start
         await app.start();
         ```
 
-        > use `space start` to run your server.
-
-        ```typescript
-        > space start
-
-        → URL:          http://localhost:3000
-        → Environment:  test
-        → Routes:       N
-        ...
-        ```
-
-    <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
+        <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
 
     - ### With Database
 
         ```typescript
         import { server, table, integer, text, primaryKey, notNull } from '@je-es/server';
 
-        // Define your schema using the built-in schema builder
         const users = table('users', [
-            primaryKey(integer('id'), true),    // auto-increment primary key
+            primaryKey(integer('id'), true),
             notNull(text('name')),
             notNull(text('email'))
         ]);
 
         const app = server({
-            port    : 3000,
-            database: {
-                connection  : './my_app.db',    // File-based SQLite database
+            port        : 3000,
+            database    : {
+                connection  : './app.db',
                 schema      : { users }
             },
-            routes  : [
+            routes: [
                 {
                     method  : 'GET',
                     path    : '/users',
-                    handler : (c) => {
-                        const allUsers = c.db.all('users');
-                        return c.json(allUsers);
-                    }
+                    handler : (c) => c.json(c.db!.all('users'))
                 },
                 {
                     method  : 'POST',
                     path    : '/users',
+                    handler : (c) => c.json(c.db!.insert('users', c.body))
+                },
+                {
+                    method  : 'GET',
+                    path    : '/users/:id',
                     handler : (c) => {
-                        const newUser = c.db.insert('users', c.body);
-                        return c.json(newUser);
+                        const user = c.db!.findById('users', parseInt(c.params.id));
+                        return user
+                            ? c.json(user)
+                            : c.status(404).json({ error: 'Not found' });
                     }
                 }
             ]
         });
 
         await app.start();
-        // Data persists in ./my_app.db file!
         ```
 
-    <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
+        <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
 
     - ### With Security
 
         ```typescript
-        import { server } from '@je-es/server';
-
         const app = server({
-            port    : 3000,
-            security: {
-                // Rate limiting
-                rateLimit: {
-                    max             : 100,
-                    windowMs        : 60000, // 1 minute
-                    message         : 'Too many requests, please try again later'
-                },
-                // CORS configuration
-                cors: {
-                    origin          : ['http://localhost:3000', 'https://example.com'],
-                    credentials     : true,
-                    methods         : ['GET', 'POST', 'PUT', 'DELETE'],
-                    allowedHeaders  : ['Content-Type', 'Authorization']
+            port        : 3000,
+            security    : {
+                rateLimit   : { max: 100, windowMs: 60000 },
+                cors        : {
+                    origin      : ['http://localhost:3000'],
+                    credentials : true
                 }
             },
-            routes  : [
-                {
-                    method  : 'GET',
-                    path    : '/protected',
-                    handler : (c) => c.json({ message: 'This route is protected!' })
-                }
-            ]
+            routes: [/* your routes */]
         });
-
-        await app.start();
         ```
 
-<br>
+        <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
 
-- ## API Reference
+    - ### Static Files
+
+        ```typescript
+        const app = server({
+            port    : 3000,
+            static  : {
+                path        : '/public',
+                directory   : './public',
+                maxAge      : 3600
+            }
+        });
+        ```
+
+    <br>
+
+- ## API
 
     - ### Server Configuration
 
@@ -206,214 +203,182 @@
         import { server, type ServerConfig } from '@je-es/server';
 
         const config: ServerConfig = {
-            // Basic settings
-            port        : 3000,
-            hostname    : 'localhost',
+            port                    : 3000,
+            hostname                : 'localhost',
 
-            // Request handling
-            requestTimeout              : 30000,        // 30 seconds
-            maxRequestSize              : 10485760,     // 10MB
-            gracefulShutdownTimeout     : 10000,        // 10 seconds
+            // Timeouts & Limits
+            requestTimeout          : 30000,
+            maxRequestSize          : 10485760,
+            gracefulShutdownTimeout : 10000,
 
-            // Logging
+            // Logging (via @je-es/slog)
             logging: {
-                level   : 'info',   // 'debug' | 'info' | 'warn' | 'error'
-                pretty  : false     // Enable pretty printing
+                level               : 'info',       // 'debug' | 'info' | 'warn' | 'error'
+                pretty              : false
             },
 
-            // Database
+            // Database (via @je-es/sdb)
             database: {
-                connection  : ':memory:',   // or file path like './app.db'
-                schema      : {}
+                connection          : './app.db',   // or ':memory:'
+                schema              : {}
             },
+
+            // Multiple databases
+            database: [
+                { name: 'default',  connection: './main.db' },
+                { name: 'cache',    connection: ':memory:' }
+            ],
 
             // Security
             security: {
-                rateLimit   : true,
-                cors        : true,
-                csrf        : true
+                rateLimit           : { max: 100, windowMs: 60000 },
+                cors                : { origin: '*', credentials: true }
             },
 
-            // Routes
-            routes: [],
+            // Static files
+            static: {
+                path                : '/public',
+                directory           : './public',
+                maxAge              : 3600
+            },
 
-            // Lifecycle hooks
-            onShutdown: async () => {
-                console.log('Server shutting down...');
-            }
-        };
-
-        const app = server(config);
-        await app.start();
-        ```
-
-    <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
-
-    - ### Route Definition
-
-        ```typescript
-        import { type RouteDefinition, type AppContext } from '@je-es/server';
-
-        // Single HTTP method
-        const route: RouteDefinition = {
-            method  : 'GET',
-            path    : '/users/:id',
-            handler : (c: AppContext) => {
-                return c.json({ id: c.params.id });
-            }
-        };
-
-        // Multiple HTTP methods
-        const multiMethodRoute: RouteDefinition = {
-            method  : ['GET', 'POST'],
-            path    : '/api/resource',
-            handler : (c: AppContext) => {
-                if (c.request.method === 'GET') {
-                    return c.json({ method  : 'GET' });
-                }
-                return c.json({ method  : 'POST', body: c.body });
-            }
-        };
-
-        // Dynamic routes with nested parameters
-        const nestedRoute: RouteDefinition = {
-            method  : 'GET',
-            path    : '/posts/:postId/comments/:commentId',
-            handler : (c: AppContext) => {
-                return c.json({
-                    postId: c.params.postId,
-                    commentId: c.params.commentId
-                });
-            }
+            // Lifecycle
+            onShutdown              : async () => { console.log('Shutting down...'); }
         };
         ```
 
-    <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
+        <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
 
     - ### Context API
 
         ```typescript
-        import { type AppContext } from '@je-es/server';
-
-        // Response methods
         handler : (c: AppContext) => {
-            // JSON response
-            c.json({ data: 'value' }, 200);
+            // Request
+            c.params        // URL parameters
+            c.query         // Query string
+            c.body          // Parsed body (JSON/form/multipart)
+            c.headers       // Request headers
+            c.ip            // Client IP
+            c.requestId     // Unique request ID
 
-            // Text response
-            c.text('Hello World', 200);
+            // Resources
+            c.db            // Database instance
+            c.logger        // Logger instance
 
-            // HTML response
-            c.html('<h1>Hello</h1>', 200);
+            // Response
+            c.json({ data })
+            c.text('text')
+            c.html('HTML')
+            c.redirect('/path')
+            c.file('./file.pdf', 'application/pdf')
+            c.status(201).json({ created: true })
 
-            // Redirect
-            c.redirect('/new-location', 302);
+            // Headers
+            c.setHeader('X-Custom', 'value')
+            c.getHeader('Authorization')
 
-            // File response
-            c.file('./path/to/file.pdf', 'application/pdf');
-
-            // Chain status
-            c.status(201).json({ created: true });
-        }
-
-        // Request data
-        handler : (c: AppContext) => {
-            const params = c.params;      // URL parameters
-            const query = c.query;        // Query string
-            const body = c.body;          // Request body
-            const headers = c.headers;    // Request headers
-            const db = c.db;              // Database instance
-            const logger = c.logger;      // Logger instance
-            const requestId = c.requestId; // Unique request ID
-        }
-
-        // Headers
-        handler : (c: AppContext) => {
-            c.setHeader('X-Custom-Header', 'value');
-            const auth = c.getHeader('Authorization');
-        }
-
-        // Cookies
-        handler : (c: AppContext) => {
-            c.setCookie('session', 'abc123', {
-                maxAge: 3600,
-                httpOnly: true,
-                secure: true,
-                sameSite: 'Strict'
-            });
-
-            const session = c.getCookie('session');
-            c.deleteCookie('session');
+            // Cookies
+            c.setCookie('session', 'token', { httpOnly: true })
+            c.getCookie('session')
+            c.deleteCookie('session')
         }
         ```
 
-<br>
+        <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
 
-- ## Security Features
+    - ### Routes
+
+        ```typescript
+        // Single method
+        { method  : 'GET', path    : '/users', handler }
+
+        // Multiple methods
+        { method  : ['GET', 'POST'], path    : '/api', handler }
+
+        // Dynamic parameters
+        { method  : 'GET', path    : '/users/:id', handler }
+        { method  : 'GET', path    : '/posts/:postId/comments/:commentId', handler }
+
+        // Wildcards
+        { method  : 'GET', path    : '/files/*', handler }
+        ```
+
+        <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
+
+    - ### Database Operations
+
+        ```typescript
+        // CRUD
+        c.db!.all       ('users')
+        c.db!.findById  ('users', 1)
+        c.db!.find      ('users',    { role: 'admin' })
+        c.db!.insert    ('users',    { name: 'John'  })
+        c.db!.update    ('users', 1, { name: 'Jane'  })
+        c.db!.delete    ('users', 1)
+
+        // Multiple databases
+        const mainDb = app.db.get('default');
+        const cacheDb = app.db.get('cache');
+        ```
+
+        <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
+
+    - ### Dynamic Routes
+
+        ```typescript
+        await app.start();
+
+        // Add single route
+        app.addRoute({
+            method  : 'POST',
+            path    : '/dynamic',
+            handler : (c) => c.json({ dynamic: true })
+        });
+
+        // Add multiple routes
+        app.addRoutes([
+            { method  : 'GET', path    : '/route1', handler },
+            { method  : 'GET', path    : '/route2', handler }
+        ]);
+
+        // Get all routes
+        const routes = app.getRoutes();
+        ```
+
+    <br>
+
+- ## Security
 
     - ### Rate Limiting
 
         ```typescript
-        const app = server({
-            security: {
-                rateLimit: {
-                    max: 100,              // Max requests per window
-                    windowMs: 60000,       // Time window in milliseconds
-                    keyGenerator: (c) => {
-                        // Custom key generation (default: IP address)
-                        return c.headers.get('x-api-key') || c.request.ip;
-                    },
-                    message: 'Rate limit exceeded'
-                }
+        security: {
+            rateLimit: {
+                max             : 100,
+                windowMs        : 60000,
+                keyGenerator    : (c) => c.ip,
+                message         : 'Too many requests'
             }
-        });
+        }
         ```
 
-    <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
+        <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
 
-    - ### CORS Configuration
+    - ### CORS
 
         ```typescript
-        const app = server({
-            security: {
-                cors: {
-                    // Allow specific origins
-                    origin: ['http://localhost:3000', 'https://example.com'],
-
-                    // Or use a function
-                    origin: (origin) => {
-                        return origin.endsWith('.example.com');
-                    },
-
-                    // Or allow all
-                    origin: '*',
-
-                    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-                    allowedHeaders: ['Content-Type', 'Authorization'],
-                    credentials: true,
-                    maxAge: 86400 // 24 hours
-                }
+        security: {
+            cors: {
+                origin          : ['http://localhost:3000'],
+                // or: origin   : '*',
+                // or: origin   : (origin) => origin.endsWith('.example.com'),
+                methods         : ['GET', 'POST', 'PUT', 'DELETE'],
+                credentials     : true
             }
-        });
+        }
         ```
 
-    <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
-
-    - ### CSRF Protection
-
-        ```typescript
-        import { SecurityManager } from '@je-es/server';
-
-        const security = new SecurityManager();
-
-        // Generate CSRF token
-        const token = security.generateCsrfToken('session-id', 3600000); // 1 hour TTL
-
-        // Validate CSRF token
-        const isValid = security.validateCsrfToken(token, 'session-id');
-        ```
-
-    <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
+        <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
 
     - ### Input Sanitization
 
@@ -422,650 +387,180 @@
 
         const security = new SecurityManager();
 
-        // Sanitize HTML
-        const cleanHtml = security.sanitizeHtml('<script>alert("xss")</script>');
-        // Output: &lt;script&gt;alert(&quot;xss&quot;)&lt;&#x2F;script&gt;
-
-        // Sanitize SQL
-        const cleanSql = security.sanitizeSql("'; DROP TABLE users--");
-        // Output: ''; DROP TABLE users--
+        security.sanitizeHtml('xss');
+        security.sanitizeSql("'; DROP TABLE users--");
         ```
 
-<br>
+        <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
 
-- ## Database Support
-
-    - ### Single Database
+    - ### CSRF Protection
 
         ```typescript
-        import { server } from '@je-es/server';
-
-        const app = server({
-            database: {
-                connection: './my_app.db' // ✔ File-based SQLite - data persists!
-                // or ':memory:' for in-memory database
-            }
-        });
-
-        // Access in routes via c.db
+        const security  = new SecurityManager();
+        const token     = security.generateCsrfToken('session-id');
+        const valid     = security.validateCsrfToken(token, 'session-id');
         ```
 
-    <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
+    <br>
 
-    - ### Multiple Databases
+- ## Error Handling
 
-        ```typescript
-        import { server } from '@je-es/server';
+    ```typescript
+    import {
+        AppError,           // Custom errors
+        ValidationError,    // 400
+        DatabaseError,      // 500
+        TimeoutError,       // 408
+        RateLimitError      // 429
+    } from '@je-es/server';
 
-        const app = server({
-            database: [
-                {
-                    name: 'default',
-                    connection: './main.db'      // Main database file
-                },
-                {
-                    name: 'analytics',
-                    connection: './analytics.db' // Analytics database file
-                }
-            ],
-            routes  : [
-                {
-                    method  : 'GET',
-                    path    : '/data',
-                    handler : (c) => {
-                        // Access default database
-                        const users = c.db.all('users');
+    handler : (c) => {
+        if (!c.body?.email) {
+            throw new ValidationError('Email required');
+        }
 
-                        // Access named databases
-                        const mainDb = app.db.get('default');
-                        const analyticsDb = app.db.get('analytics');
+        if (invalid) {
+            throw new AppError('Invalid data', 400, 'INVALID_DATA');
+        }
 
-                        const mainData = mainDb.all('some_table');
-                        const analyticsData = analyticsDb.all('analytics_table');
+        return c.json({ success: true });
+    }
+    ```
 
-                        return c.json({ users, mainData, analyticsData });
-                    }
-                }
-            ]
-        });
-        ```
+    <br>
 
-    <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
+- ## Built-in Endpoints
 
-    - ### Schema Definition
+    ```typescript
+    // Health check
+    GET /health
+    // Response: { status, timestamp, uptime, activeRequests }
 
-        ```typescript
-        import {
-            server,
-            table,
-            integer,
-            text,
-            real,
-            blob,
-            numeric,
-            primaryKey,
-            notNull,
-            unique,
-            defaultValue,
-            references
-        } from '@je-es/server';
+    // Readiness check
+    GET /readiness
+    // Response: { ready, checks: { database, activeRequests }, timestamp }
+    ```
 
-        // Define products table
-        const products = table('products', [
-            primaryKey(integer('id'), true),        // Auto-increment primary key
-            notNull(text('name')),
-            text('description'),
-            notNull(real('price')),
-            defaultValue(integer('stock'), 0)
-        ]);
+    <br>
 
-        // Define orders table with foreign key
-        const orders = table('orders', [
-            primaryKey(integer('id'), true),
-            notNull(integer('product_id')),
-            references(integer('product_id'), 'products', 'id'),
-            notNull(integer('quantity')),
-            defaultValue(text('status'), 'pending')
-        ]);
-
-        const app = server({
-            database: {
-                connection: './store.db',
-                schema: { products, orders }
-            }
-        });
-        ```
-
-    <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
-
-    - ### Database Operations
-
-        ```typescript
-        import { server, table, integer, text, primaryKey, notNull } from '@je-es/server';
-
-        const users = table('users', [
-            primaryKey(integer('id'), true),
-            notNull(text('name')),
-            notNull(text('email')),
-            integer('age')
-        ]);
-
-        const app = server({
-            database: {
-                connection: './app.db',
-                schema: { users }
-            },
-            routes  : [
-                // Get all records
-                {
-                    method  : 'GET',
-                    path    : '/users',
-                    handler : (c) => {
-                        const allUsers = c.db.all('users');
-                        return c.json(allUsers);
-                    }
-                },
-
-                // Find by ID
-                {
-                    method  : 'GET',
-                    path    : '/users/:id',
-                    handler : (c) => {
-                        const user = c.db.findById('users', parseInt(c.params.id));
-                        if (!user) return c.status(404).json({ error: 'Not found' });
-                        return c.json(user);
-                    }
-                },
-
-                // Find with conditions
-                {
-                    method  : 'GET',
-                    path    : '/users/search',
-                    handler : (c) => {
-                        const users = c.db.find('users', {
-                            name: c.query.name
-                        });
-                        return c.json(users);
-                    }
-                },
-
-                // Insert
-                {
-                    method  : 'POST',
-                    path    : '/users',
-                    handler : (c) => {
-                        const newUser = c.db.insert('users', c.body);
-                        return c.json(newUser);
-                    }
-                },
-
-                // Update
-                {
-                    method  : 'PUT',
-                    path    : '/users/:id',
-                    handler : (c) => {
-                        const updated = c.db.update(
-                            'users',
-                            parseInt(c.params.id),
-                            c.body
-                        );
-                        if (!updated) return c.status(404).json({ error: 'Not found' });
-                        return c.json(updated);
-                    }
-                },
-
-                // Delete
-                {
-                    method  : 'DELETE',
-                    path    : '/users/:id',
-                    handler : (c) => {
-                        c.db.delete('users', parseInt(c.params.id));
-                        return c.json({ deleted: true });
-                    }
-                }
-            ]
-        });
-        ```
-
-    <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
-
-    - ### Query Builder
-
-        ```typescript
-        const app = server({
-            database: {
-                connection: './app.db',
-                schema: { users }
-            },
-            routes  : [
-                {
-                    method  : 'GET',
-                    path    : '/advanced-search',
-                    handler : (c) => {
-                        // Complex queries with query builder
-                        const results = c.db.query()
-                            .select(['name', 'email', 'age'])
-                            .from('users')
-                            .where({
-                                column: 'age',
-                                operator: '>=',
-                                value: 18
-                            })
-                            .and({
-                                column: 'name',
-                                operator: 'LIKE',
-                                value: '%John%'
-                            })
-                            .orderBy('age', 'DESC')
-                            .limit(10)
-                            .offset(0)
-                            .execute();
-
-                        return c.json(results);
-                    }
-                },
-
-                // Multiple where conditions
-                {
-                    method  : 'GET',
-                    path    : '/filter',
-                    handler : (c) => {
-                        const users = c.db.query()
-                            .select()
-                            .from('users')
-                            .where([
-                                { column: 'age', operator: '>', value: 25 },
-                                { column: 'age', operator: '<', value: 50 }
-                            ])
-                            .execute();
-
-                        return c.json(users);
-                    }
-                },
-
-                // OR conditions
-                {
-                    method  : 'GET',
-                    path    : '/or-search',
-                    handler : (c) => {
-                        const users = c.db.query()
-                            .select()
-                            .from('users')
-                            .where({ column: 'name', operator: '=', value: 'John' })
-                            .or({ column: 'name', operator: '=', value: 'Jane' })
-                            .execute();
-
-                        return c.json(users);
-                    }
-                },
-
-                // Get single result
-                {
-                    method  : 'GET',
-                    path    : '/first-user',
-                    handler : (c) => {
-                        const user = c.db.query()
-                            .select()
-                            .from('users')
-                            .limit(1)
-                            .executeOne();
-
-                        return c.json(user);
-                    }
-                }
-            ]
-        });
-        ```
-
-    <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
-
-    - ### Transactions
-
-        ```typescript
-        const app = server({
-            database: {
-                connection: './app.db',
-                schema: { users, orders }
-            },
-            routes  : [
-                {
-                    method  : 'POST',
-                    path    : '/place-order',
-                    handler : (c) => {
-                        try {
-                            c.db.transaction((db) => {
-                                // Insert order
-                                const order = db.insert('orders', {
-                                    product_id: c.body.productId,
-                                    quantity: c.body.quantity
-                                });
-
-                                // Update product stock
-                                const product = db.findById('products', c.body.productId);
-                                db.update('products', c.body.productId, {
-                                    stock: product.stock - c.body.quantity
-                                });
-                            });
-
-                            return c.json({ success: true });
-                        } catch (error) {
-                            return c.status(500).json({
-                                error: 'Transaction failed'
-                            });
-                        }
-                    }
-                }
-            ]
-        });
-        ```
-
-    <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
-
-    - ### Raw SQL
-
-        ```typescript
-        const app = server({
-            database: {
-                connection: './app.db',
-                schema: { users }
-            },
-            routes  : [
-                {
-                    method  : 'GET',
-                    path    : '/custom-query',
-                    handler : (c) => {
-                        // Execute raw SQL
-                        const results = c.db.raw(
-                            'SELECT * FROM users WHERE age > ? AND name LIKE ?',
-                            [25, '%John%']
-                        );
-
-                        return c.json(results);
-                    }
-                },
-
-                {
-                    method  : 'GET',
-                    path    : '/single-result',
-                    handler : (c) => {
-                        // Get single row
-                        const user = c.db.rawOne(
-                            'SELECT * FROM users WHERE id = ?',
-                            [1]
-                        );
-
-                        return c.json(user);
-                    }
-                },
-
-                {
-                    method  : 'POST',
-                    path    : '/execute-sql',
-                    handler : (c) => {
-                        // Execute without return
-                        c.db.exec('DELETE FROM users WHERE age < 18');
-
-                        return c.json({ success: true });
-                    }
-                }
-            ]
-        });
-        ```
-
-<br>
-
-- ## Advanced Features
-
-    - ### Logging
-
-        ```typescript
-        import { server, Logger } from '@je-es/server';
-
-        // Enable logging
-        const app = server({
-            logging: {
-                level: 'debug',  // 'debug' | 'info' | 'warn' | 'error' | 'fatal'
-                pretty: true     // Pretty print for development
-            }
-        });
-
-        // Use logger in routes
-        const route = {
-            method  : 'GET',
-            path    : '/test',
-            handler : (c) => {
-                c.logger?.info({ userId: 123 }, 'User accessed endpoint');
-                c.logger?.warn({ attempt: 3 }, 'Suspicious activity');
-                c.logger?.error({ error: 'DB connection failed' }, 'Database error');
-                return c.json({ ok: true });
-            }
-        };
-        ```
-
-    <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
+- ## Advanced
 
     - ### Cookie Management
 
         ```typescript
-        const app = server({
-            routes  : [
-                {
-                    method  : 'POST',
-                    path    : '/login',
-                    handler : (c) => {
-                        // Set cookie with options
-                        c.setCookie('session', 'user-token-123', {
-                            maxAge: 3600,           // 1 hour
-                            expires: new Date('2025-12-31'),
-                            path    : '/',
-                            domain: 'example.com',
-                            secure: true,           // HTTPS only
-                            httpOnly: true,         // No JavaScript access
-                            sameSite: 'Strict'      // CSRF protection
-                        });
-
-                        return c.json({ loggedIn: true });
-                    }
-                },
-                {
-                    method  : 'GET',
-                    path    : '/profile',
-                    handler : (c) => {
-                        const session = c.getCookie('session');
-                        if (!session) {
-                            return c.status(401).json({ error: 'Unauthorized' });
-                        }
-                        return c.json({ session });
-                    }
-                },
-                {
-                    method  : 'POST',
-                    path    : '/logout',
-                    handler : (c) => {
-                        c.deleteCookie('session');
-                        return c.json({ loggedOut: true });
-                    }
-                }
-            ]
+        c.setCookie('session', 'token', {
+            maxAge      : 3600,
+            httpOnly    : true,
+            secure      : true,
+            sameSite    : 'Strict',
+            path        : '/',
+            domain      : 'example.com'
         });
         ```
 
-    <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
+        <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
 
-    - ### Dynamic Routing
-
-        ```typescript
-        const app = server({
-            routes  : [
-                // Simple parameter
-                {
-                    method  : 'GET',
-                    path    : '/users/:id',
-                    handler : (c) => c.json({ userId: c.params.id })
-                },
-
-                // Multiple parameters
-                {
-                    method  : 'GET',
-                    path    : '/posts/:postId/comments/:commentId',
-                    handler : (c) => c.json({
-                        postId: c.params.postId,
-                        commentId: c.params.commentId
-                    })
-                },
-
-                // Complex patterns
-                {
-                    method  : 'GET',
-                    path    : '/api/:version/:resource',
-                    handler : (c) => c.json({
-                        version: c.params.version,
-                        resource: c.params.resource
-                    })
-                }
-            ]
-        });
-        ```
-
-    <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
-
-    - ### Health Checks
+    - ### Static File Options
 
         ```typescript
-        // Built-in health endpoints are automatically available
-
-        // GET /health
-        // Response:
-        {
-            status: 'healthy',
-            timestamp: '2025-11-28T10:00:00.000Z',
-            uptime: 3600,
-            activeRequests: 5
-        }
-
-        // GET /readiness
-        // Response:
-        {
-            ready: true,
-            checks: {
-                database: 'connected',  // or 'not configured'
-                activeRequests: 5
-            },
-            timestamp: '2025-11-28T10:00:00.000Z'
+        static: {
+            path            : '/public',
+            directory       : './public',
+            maxAge          : 3600,
+            index           : ['index.html'],
+            dotfiles        : 'deny', // 'allow' | 'deny' | 'ignore'
+            etag            : true,
+            lastModified    : true,
+            immutable       : false,
+            extensions      : ['html', 'htm'],
+            setHeaders      : (ctx, path) => {
+                ctx.setHeader('X-Custom', 'value');
+            }
         }
         ```
 
-    <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
+        <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
 
     - ### Graceful Shutdown
 
         ```typescript
         const app = server({
-            gracefulShutdownTimeout: 10000, // 10 seconds
+            gracefulShutdownTimeout: 10000,
             onShutdown: async () => {
-                console.log('Cleaning up resources...');
-                // Close external connections, flush logs, etc.
+                // Cleanup
             }
         });
 
-        await app.start();
-
-        // Handle signals
         process.on('SIGTERM', async () => {
             await app.stop();
             process.exit(0);
         });
-
-        process.on('SIGINT', async () => {
-            await app.stop();
-            process.exit(0);
-        });
         ```
 
-    <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
+        <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
 
-    - ### Dynamic Routes
-
-        ```typescript
-        const app = server({
-            routes  : [
-                {
-                    method  : 'GET',
-                    path    : '/initial',
-                    handler : (c) => c.json({ route: 'initial' })
-                }
-            ]
-        });
-
-        await app.start();
-
-        // Add routes after server starts
-        app.addRoute({
-            method  : 'POST',
-            path    : '/dynamic',
-            handler : (c) => c.json({ route: 'dynamic', body: c.body })
-        });
-
-        // Get all registered routes
-        const routes = app.getRoutes();
-        console.log(routes);
-        ```
-
-    <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
-
-    - ### Request Timeout
+    - ### Logging
 
         ```typescript
-        const app = server({
-            requestTimeout  : 5000, // 5 seconds
-            routes          : [
-                {
-                    method  : 'GET',
-                    path    : '/slow',
-                    handler : async (c) => {
-                        // If this takes more than 5 seconds, request will timeout
-                        await someSlowOperation();
-                        return c.json({ done: true });
-                    }
-                }
-            ]
-        });
-        ```
-
-    <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
-
-    - ### Custom Error Handling
-
-        ```typescript
-        import { AppError, ValidationError } from '@je-es/server';
-
-        const app = server({
-            routes  : [
-                {
-                    method  : 'POST',
-                    path    : '/validate',
-                    handler : (c) => {
-                        if (!c.body?.email) {
-                            throw new ValidationError('Email is required');
-                        }
-
-                        if (!c.body.email.includes('@')) {
-                            throw new AppError('Invalid email format', 400, 'INVALID_EMAIL');
-                        }
-
-                        return c.json({ valid: true });
-                    }
-                }
-            ]
-        });
-
-        // Error responses are automatically formatted:
-        {
-            error       : 'Email is required',
-            code        : 'VALIDATION_ERROR',
-            requestId   : 'unique-request-id'
+        handler : (c) => {
+            c.logger?.info( { userId: 123  }, 'User action');
+            c.logger?.warn( { attempt: 3   }, 'Warning');
+            c.logger?.error({ error: 'msg' }, 'Error');
         }
         ```
+
+        <br>
+
+- ## Complete Example
+
+    ```typescript
+    import { server, table, integer, text, primaryKey, notNull } from '@je-es/server';
+
+    const users = table('users', [
+        primaryKey(integer('id'), true),
+        notNull(text('name')),
+        notNull(text('email'))
+    ]);
+
+    const app = server({
+        port        : 3000,
+        logging     : { level: 'info', pretty: true },
+        database    : { connection: './app.db', schema: { users } },
+        security    : {
+            rateLimit   : { max: 100, windowMs: 60000 },
+            cors        : { origin: ['http://localhost:3000'] }
+        },
+        static      : { path: '/public', directory: './public' },
+        routes      : [
+            {
+                method  : 'GET',
+                path    : '/api/users',
+                handler : (c) => c.json(c.db!.all('users'))
+            },
+            {
+                method  : 'POST',
+                path    : '/api/users',
+                handler : (c) => {
+                    if (!c.body?.name || !c.body?.email) {
+                        throw new ValidationError('Name and email required');
+                    }
+                    const user = c.db!.insert('users', c.body);
+                    return c.status(201).json(user);
+                }
+            },
+            {
+                method  : 'GET',
+                path    : '/api/users/:id',
+                handler : (c) => {
+                    const user = c.db!.findById('users', parseInt(c.params.id));
+                    return user ? c.json(user) : c.status(404).json({ error: 'Not found' });
+                }
+            }
+        ]
+    });
+
+    await app.start();
+    ```
 
 <!-- ╚═════════════════════════════════════════════════════════════════╝ -->
 

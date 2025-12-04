@@ -6,8 +6,8 @@
     "repo"              : {
         "org"           : "je-es",
         "name"          : "server",
-        "version"       : "0.1.2",
-        "desc"          : "Build faster, Sleep better !",
+        "version"       : "0.1.3",
+        "desc"          : "The simplest, fastest, and most organized way to build production-ready servers with Bun.",
         "url"           : "https://github.com/je-es/server",
         "kw"            : [ "je-es", "server" ],
         "license"       : "MIT"

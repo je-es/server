@@ -3,6 +3,10 @@
   "workspaces": {
     "": {
       "name": "@/server",
+      "dependencies": {
+        "@je-es/sdb": "^0.0.1",
+        "@je-es/slog": "^0.0.1",
+      },
       "devDependencies": {
         "@eslint/js": "^9.34.0",
         "@stylistic/eslint-plugin": "^5.3.1",
@@ -100,6 +104,10 @@
     "@humanwhocodes/module-importer": ["@humanwhocodes/module-importer@1.0.1", "", {}, "sha512-bxveV4V8v5Yb4ncFTT3rPSgZBOpCkjfK0y4oVVVJwIuDVBRMDXrPyXRL988i5ap9m9bnyEEjWfm5WkBmtffLfA=="],
 
     "@humanwhocodes/retry": ["@humanwhocodes/retry@0.4.3", "", {}, "sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ=="],
+
+    "@je-es/sdb": ["@je-es/sdb@0.0.1", "", { "peerDependencies": { "bun": ">=1.3.3" } }, "sha512-FdftGw4w7lXDibfg4QMjd+CcVhunqaHf1WfUp/yPr+DDBcc368NcGG1zItvkR0/5J0m5wQS9Zh2J3B4niKai1A=="],
+
+    "@je-es/slog": ["@je-es/slog@0.0.1", "", { "peerDependencies": { "bun": ">=1.3.3" } }, "sha512-8rxsjefo2MGkuyJjl1EDKEplzMFLT/EIOVmEfGsFEOgKIQQQ2b+M884fZKSU+ynaOtPPisfKi9BF9CUeukehAw=="],
 
     "@jridgewell/gen-mapping": ["@jridgewell/gen-mapping@0.3.13", "", { "dependencies": { "@jridgewell/sourcemap-codec": "^1.5.0", "@jridgewell/trace-mapping": "^0.3.24" } }, "sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA=="],
 

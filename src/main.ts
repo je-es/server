@@ -6,12 +6,12 @@
 
 // ╔════════════════════════════════════════ PACK ════════════════════════════════════════╗
 
-    import { DB }               from './mod/db'
-    import { Router }           from './mod/router'
-    import { SecurityManager }  from './mod/security'
-    import { Logger }       	from './mod/logger'
-    import * as types           from './types.d'
-    import { StaticFileServer } from './mod/static'
+    import * as sdb             from '@je-es/sdb';
+    import { Router }           from './mod/router';
+    import { SecurityManager }  from './mod/security';
+    import { Logger }       	from '@je-es/slog';
+    import * as types           from './types.d';
+    import { StaticFileServer } from './mod/static';
 
 // ╚══════════════════════════════════════════════════════════════════════════════════════╝
 
@@ -19,8 +19,8 @@
 
 // ╔════════════════════════════════════════ INIT ════════════════════════════════════════╗
 
-    const security  = new SecurityManager()
-    const router    = new Router()
+    const security  = new SecurityManager();
+    const router    = new Router();
 
 // ╚══════════════════════════════════════════════════════════════════════════════════════╝
 
@@ -31,125 +31,125 @@
     export function server(config: types.ServerConfig = {}): types.ServerInstance {
 
 		// ════════ Configuration ════════
-		const port                      = Number(config.port) || 3000
-		const hostname                  = config.hostname || 'localhost'
-		const maxReqSize                = config.maxRequestSize || 10 * 1024 * 1024
-		const requestTimeout            = config.requestTimeout || 30000
-		const gracefulShutdownTimeout   = config.gracefulShutdownTimeout || 10000
+		const port                      = Number(config.port) || 3000;
+		const hostname                  = config.hostname || 'localhost';
+		const maxReqSize                = config.maxRequestSize || 10 * 1024 * 1024;
+		const requestTimeout            = config.requestTimeout || 30000;
+		const gracefulShutdownTimeout   = config.gracefulShutdownTimeout || 10000;
 
-		const logCfg                    = typeof config.logging === 'object' ? config.logging : {}
-		const logger                    = config.logging ? new Logger(logCfg.level || 'info', logCfg.pretty) : null
+		const logCfg                    = typeof config.logging === 'object' ? config.logging : {};
+		const logger                    = config.logging ? new Logger(logCfg.level || 'info', logCfg.pretty) : null;
 
-		const dbs                       = new Map<string, any>()
-		const routes: types.RouteDefinition[] = []
-		const activeRequests            = new Set<string>()
+		const dbs                       = new Map<string, sdb.DB>();
+		const routes: types.RouteDefinition[] = [];
+		const activeRequests            = new Set<string>();
 
 		// ════════ Cleanup intervals ════════
         const cleanupInterval = setInterval(() => {
-            security.cleanupRateLimit()
-            security.cleanupCsrfTokens()
-        }, 2 * 60 * 1000)
+            security.cleanupRateLimit();
+            security.cleanupCsrfTokens();
+        }, 2 * 60 * 1000);
 
-        async function handleRequest(request: Request, server: any): Promise<Response> {
-            const startTime = Date.now()
-            const requestId = crypto.randomUUID()
-            const url       = new URL(request.url)
-            const path      = url.pathname
-            const method    = request.method.toUpperCase()
-            const ip        = getClientIp(request, server)
+        async function handleRequest(request: Request, server: unknown): Promise<Response> {
+            const startTime = Date.now();
+            const requestId = crypto.randomUUID();
+            const url       = new URL(request.url);
+            const path      = url.pathname;
+            const method    = request.method.toUpperCase();
+            const ip        = getClientIp(request, server);
 
-            activeRequests.add(requestId)
+            activeRequests.add(requestId);
 
             try {
                 // Check request size from header
-                const contentLength = request.headers.get('content-length')
+                const contentLength = request.headers.get('content-length');
                 if (contentLength && parseInt(contentLength) > maxReqSize) {
 
-                    logger?.warn({ requestId, size: contentLength, ip }, 'Request too large')
+                    logger?.warn({ requestId, size: contentLength, ip }, 'Request too large');
 
                     return new Response(JSON.stringify({ error: 'Payload too large' }), {
 						status	: 413,
 						headers	: { 'Content-Type': 'application/json' }
-                    })
+                    });
                 }
 
                 // CORS handling
-                const corsHeaders = handleCors(request, config)
+                const corsHeaders = handleCors(request, config);
                 if (method === 'OPTIONS') {
-                    return new Response(null, { status: 204, headers: corsHeaders })
+                    return new Response(null, { status: 204, headers: corsHeaders });
                 }
 
                 // Rate limiting
                 if (config.security && typeof config.security === 'object' && config.security.rateLimit) {
                     const rateLimitCfg = typeof config.security.rateLimit === 'object'
                     ? config.security.rateLimit
-                    : {}
-                    const max           = rateLimitCfg.max || 100
-                    const windowMs      = rateLimitCfg.windowMs || 60000
+                    : {};
+                    const max           = rateLimitCfg.max || 100;
+                    const windowMs      = rateLimitCfg.windowMs || 60000;
                     const rateLimitKey  = rateLimitCfg.keyGenerator
-                    ? rateLimitCfg.keyGenerator({ request, ip } as any)
-                    : ip
+                    ? rateLimitCfg.keyGenerator({ request, ip } as types.AppContext)
+                    : ip;
 
                     if (!security.checkRateLimit(rateLimitKey, max, windowMs)) {
-                    logger?.warn({ requestId, ip, key: rateLimitKey }, 'Rate limit exceeded')
+                    logger?.warn({ requestId, ip, key: rateLimitKey }, 'Rate limit exceeded');
                     return new Response(
                         JSON.stringify({ error: rateLimitCfg.message || 'Too many requests' }),
                         { status: 429, headers: { 'Content-Type': 'application/json' } }
-                    )
+                    );
                     }
                 }
 
                 // Parse body
-                let body: any = null
+                let body: unknown = null;
                 if (['POST', 'PUT', 'PATCH'].includes(method)) {
-                    body = await parseBody(request, logger, maxReqSize)
+                    body = await parseBody(request, logger, maxReqSize);
                 }
 
                 // Get database
-                const defaultDb = dbs.get('default')
+                const defaultDb = dbs.get('default');
 
                 // Match route
-                const routeMatch = router.match(method, path)
+                const routeMatch = router.match(method, path);
                 if (!routeMatch) {
-                    const ctx = createAppContext(ip, request, {}, defaultDb, logger, requestId)
-                    logger?.warn({ requestId, method, path, ip }, 'Route not found')
-                    return ctx.json({ error: 'Not Found', path }, 404)
+                    const ctx = createAppContext(ip, request, {}, defaultDb, logger, requestId);
+                    logger?.warn({ requestId, method, path, ip }, 'Route not found');
+                    return ctx.json({ error: 'Not Found', path }, 404);
                 }
 
-                const ctx = createAppContext(ip, request, routeMatch.params || {}, defaultDb, logger, requestId)
-                ctx.body = body
-                ctx.request = request
+                const ctx = createAppContext(ip, request, routeMatch.params || {}, defaultDb, logger, requestId);
+                ctx.body = body;
+                ctx.request = request;
 
                 // Execute route handler with timeout
-                const controller = new AbortController()
+                const controller = new AbortController();
                 const timeoutPromise = new Promise<never>((_, reject) => {
                     const id = setTimeout(() => {
-                    controller.abort()
-                    reject(new types.TimeoutError('Request timeout'))
-                    }, requestTimeout)
-                    controller.signal.addEventListener('abort', () => clearTimeout(id))
-                })
+                    controller.abort();
+                    reject(new types.TimeoutError('Request timeout'));
+                    }, requestTimeout);
+                    controller.signal.addEventListener('abort', () => clearTimeout(id));
+                });
 
                 const response = await Promise.race([
                     routeMatch.handler(ctx),
                     timeoutPromise
-                ]) as Response
+                ]) as Response;
 
                 // Merge CORS and security headers
-                const resHeaders = new Headers(response.headers)
+                const resHeaders = new Headers(response.headers);
                 corsHeaders.forEach((value, key) => {
-                    if (!resHeaders.has(key)) resHeaders.set(key, value)
-                })
+                    if (!resHeaders.has(key)) resHeaders.set(key, value);
+                });
 
-                resHeaders.set('X-Request-ID', requestId)
-                resHeaders.set('X-Content-Type-Options', 'nosniff')
-                resHeaders.set('X-Frame-Options', 'DENY')
-                resHeaders.set('X-XSS-Protection', '1; mode=block')
-                resHeaders.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+                resHeaders.set('X-Request-ID', requestId);
+                resHeaders.set('X-Content-Type-Options', 'nosniff');
+                resHeaders.set('X-Frame-Options', 'DENY');
+                resHeaders.set('X-XSS-Protection', '1; mode=block');
+                resHeaders.set('Referrer-Policy', 'strict-origin-when-cross-origin');
 
                 // Audit log
-                const duration = Date.now() - startTime
-                security.logRequest(requestId, method, path, ip, response.status, duration)
+                const duration = Date.now() - startTime;
+                security.logRequest(requestId, method, path, ip, response.status, duration);
                 logger?.info({
                     requestId,
                     method,
@@ -157,15 +157,15 @@
                     status: response.status,
                     duration,
                     ip
-                }, 'Request completed')
+                }, 'Request completed');
 
                 return new Response(response.body, {
                     status: response.status,
                     headers: resHeaders
-                })
+                });
             } catch (error) {
                 if (error instanceof types.AppError) {
-                    logger?.warn({ error: error.message, requestId, ip }, `App error: ${error.message}`)
+                    logger?.warn({ error: error.message, requestId, ip }, `App error: ${error.message}`);
                     return new Response(
                     JSON.stringify({
                         error	: error.message,
@@ -173,21 +173,21 @@
                         requestId
                     }),
                     { status: error.statusCode, headers: { 'Content-Type': 'application/json' } }
-                    )
+                    );
                 }
 
-                logger?.error({ error: String(error), requestId, ip }, 'Unhandled error')
+                logger?.error({ error: String(error), requestId, ip }, 'Unhandled error');
 
                 const errorMessage = process.env.NODE_ENV === 'production'
                     ? 'Internal Server Error'
-                    : (error as Error).message
+                    : (error as Error).message;
 
                 return new Response(
                     JSON.stringify({ error: errorMessage, requestId }),
                     { status: 500, headers: { 'Content-Type': 'application/json' } }
-                )
+                );
             } finally {
-                activeRequests.delete(requestId)
+                activeRequests.delete(requestId);
             }
         }
 
@@ -201,14 +201,14 @@
                 uptime          : process.uptime(),
                 activeRequests  : activeRequests.size
             })
-        }
+        };
 
         const readinessRoute: types.RouteDefinition = {
             method      : 'GET',
             path        : '/readiness',
             handler     : (c: types.AppContext) => {
-                const dbConnected = dbs.size > 0
-                const ready = dbConnected || dbs.size === 0
+                const dbConnected = dbs.size > 0;
+                const ready = dbConnected || dbs.size === 0;
                 return c.json({
                     ready,
                     checks          : {
@@ -216,72 +216,72 @@
                     activeRequests  : activeRequests.size
                     },
                     timestamp: new Date().toISOString()
-                }, ready ? 200 : 503)
+                }, ready ? 200 : 503);
             }
-        }
+        };
 
         // ════════ Register routes ════════
         if (config.routes) {
                 config.routes.forEach(route => {
-                routes.push(route)
-                const methods = Array.isArray(route.method) ? route.method : [route.method]
+                routes.push(route);
+                const methods = Array.isArray(route.method) ? route.method : [route.method];
                 methods.forEach(m => {
-                    router.register(m, route.path, route.handler, route)
-                })
-            })
+                    router.register(m, route.path, route.handler as types.RouteHandler, route);
+                });
+            });
         }
 
         // ════════ Static file serving ════════
         if (config.static) {
-            const staticConfigs = Array.isArray(config.static) ? config.static : [config.static]
+            const staticConfigs = Array.isArray(config.static) ? config.static : [config.static];
 
             for (const staticCfg of staticConfigs) {
                 try {
-                    const staticServer = new StaticFileServer(staticCfg)
-                    const handler = staticServer.handler()
+                    const staticServer = new StaticFileServer(staticCfg);
+                    const handler = staticServer.handler();
 
                     // Register catch-all route for this static path
                     const staticRoute: types.RouteDefinition = {
                         method: 'GET',
                         path: staticCfg.path === '/' ? '/*' : `${staticCfg.path}/*`,
                         handler: handler as types.RouteHandler
-                    }
+                    };
 
-                    routes.push(staticRoute)
+                    routes.push(staticRoute);
 
                     // FIXED: Handle root path differently
                     if (staticCfg.path === '/') {
                         // For root path, register both exact root and wildcard
-                        router.register('GET', '/', handler, staticRoute)
-                        router.register('HEAD', '/', handler, staticRoute)
-                        router.register('GET', '/*', handler, staticRoute)
-                        router.register('HEAD', '/*', handler, staticRoute)
+                        router.register('GET', '/', handler as types.RouteHandler, staticRoute);
+                        router.register('HEAD', '/', handler as types.RouteHandler, staticRoute);
+                        router.register('GET', '/*', handler as types.RouteHandler, staticRoute);
+                        router.register('HEAD', '/*', handler as types.RouteHandler, staticRoute);
                     } else {
                         // For prefixed paths like /public, /static
-                        router.register('GET', `${staticCfg.path}/*`, handler, staticRoute)
-                        router.register('HEAD', `${staticCfg.path}/*`, handler, staticRoute)
+                        router.register('GET', `${staticCfg.path}/*`, handler as types.RouteHandler, staticRoute);
+                        router.register('HEAD', `${staticCfg.path}/*`, handler as types.RouteHandler, staticRoute);
                     }
 
                     // logger?.info({
                     //     urlPath: staticCfg.path,
                     //     directory: staticCfg.directory,
                     //     maxAge: staticCfg.maxAge || 3600
-                    // }, '✔ Static file serving enabled')
+                    // }, '✔ Static file serving enabled');
                 } catch (error) {
                     logger?.error({
                         error: String(error),
                         path: staticCfg.path
-                    }, 'Failed to initialize static file server')
-                    throw error
+                    }, 'Failed to initialize static file server');
+                    throw error;
                 }
             }
         }
 
-        routes.push(healthRoute, readinessRoute)
-        router.register('GET', '/health', healthRoute.handler, healthRoute)
-        router.register('GET', '/readiness', readinessRoute.handler, readinessRoute)
+        routes.push(healthRoute, readinessRoute);
+        router.register('GET', '/health', healthRoute.handler as types.RouteHandler, healthRoute);
+        router.register('GET', '/readiness', readinessRoute.handler as types.RouteHandler, readinessRoute);
 
-        let bunServer: any = null
+        let bunServer: unknown = null;
 
         const instance: types.ServerInstance = {
             app         : null,
@@ -292,39 +292,39 @@
             async start() {
                 // Initialize databases with our custom DB solution
                 if (config.database) {
-                    const dbConfigs = Array.isArray(config.database) ? config.database : [config.database]
+                    const dbConfigs = Array.isArray(config.database) ? config.database : [config.database];
                     for (const dbCfg of dbConfigs) {
-                        const dbName = dbCfg.name || 'default'
+                        const dbName = dbCfg.name || 'default';
 
                         try {
                             if (typeof dbCfg.connection === 'string') {
                                 // Create DB instance with connection string
-                                const db = new DB(dbCfg.connection)
+                                const db = new sdb.DB(dbCfg.connection);
 
                                 // Define schemas if provided
                                 if (dbCfg.schema && typeof dbCfg.schema === 'object') {
-                                    for (const [tableName, tableSchema] of Object.entries(dbCfg.schema)) {
+                                    for (const [, tableSchema] of Object.entries(dbCfg.schema)) {
                                         if (tableSchema && typeof tableSchema === 'object') {
-                                            db.defineSchema(tableSchema as any)
+                                            db.defineSchema(tableSchema as sdb.TableSchema);
                                         }
                                     }
                                 }
 
-                                dbs.set(dbName, db)
+                                dbs.set(dbName, db);
 
                                 logger?.info({
                                     name: dbName,
                                     connection: dbCfg.connection
-                                }, '✔ Database connected')
+                                }, '✔ Database connected');
                             } else {
-                                throw new Error(`Database connection must be a string path (got ${typeof dbCfg.connection})`)
+                                throw new Error(`Database connection must be a string path (got ${typeof dbCfg.connection})`);
                             }
                         } catch (error) {
                             logger?.error({
                                 error: String(error),
                                 name: dbName
-                            }, 'Failed to connect to database')
-                            throw error
+                            }, 'Failed to connect to database');
+                            throw error;
                         }
                     }
                 }
@@ -333,37 +333,37 @@
                     port,
                     hostname,
                     fetch: (request, server) => handleRequest(request, server)
-                })
-                instance.bunServer = bunServer
+                });
+                instance.bunServer = bunServer;
 
-                const url = `http://${hostname}:${port}`
-                logger?.info({ url }, 'Server started')
+                const url = `http://${hostname}:${port}`;
+                logger?.info({ url }, 'Server started');
             },
 
             async stop() {
-                logger?.info('Stopping server...')
+                logger?.info('Stopping server...');
 
                 // Wait for active requests to complete
                 if (activeRequests.size > 0) {
-                    logger?.info({ count: activeRequests.size }, 'Waiting for active requests...')
-                    const deadline = Date.now() + gracefulShutdownTimeout
+                    logger?.info({ count: activeRequests.size }, 'Waiting for active requests...');
+                    const deadline = Date.now() + gracefulShutdownTimeout;
 
                     while (activeRequests.size > 0 && Date.now() < deadline) {
-                        await new Promise(resolve => setTimeout(resolve, 100))
+                        await new Promise(resolve => setTimeout(resolve, 100));
                     }
 
                     if (activeRequests.size > 0) {
-                        logger?.warn({ count: activeRequests.size }, 'Force closing with active requests')
+                        logger?.warn({ count: activeRequests.size }, 'Force closing with active requests');
                     }
                 }
 
-                clearInterval(cleanupInterval)
+                clearInterval(cleanupInterval);
 
                 if (config.onShutdown) {
                     try {
-                        await config.onShutdown()
+                        await config.onShutdown();
                     } catch (e) {
-                        logger?.error({ error: String(e) }, 'Error in shutdown handler')
+                        logger?.error({ error: String(e) }, 'Error in shutdown handler');
                     }
                 }
 
@@ -371,41 +371,41 @@
                 for (const [name, db] of dbs.entries()) {
                     try {
                         if (db && typeof db.close === 'function') {
-                            db.close()
+                            db.close();
                         }
-                        logger?.info({ name }, 'Database closed')
+                        logger?.info({ name }, 'Database closed');
                     } catch (e) {
-                        logger?.error({ error: String(e), name }, 'Error closing database')
+                        logger?.error({ error: String(e), name }, 'Error closing database');
                     }
                 }
 
-                if (bunServer) {
-                    bunServer.stop()
-                    logger?.info('Bun server stopped')
+                if (bunServer && typeof (bunServer as { stop?: () => void }).stop === 'function') {
+                    (bunServer as { stop: () => void }).stop();
+                    logger?.info('Bun server stopped');
                 }
 
-                logger?.info('Server stopped successfully')
+                logger?.info('Server stopped successfully');
             },
 
             addRoute(route: types.RouteDefinition) {
-                routes.push(route)
-                const methods = Array.isArray(route.method) ? route.method : [route.method]
+                routes.push(route);
+                const methods = Array.isArray(route.method) ? route.method : [route.method];
                 methods.forEach(m => {
-                    router.register(m, route.path, route.handler, route)
-                })
-                logger?.info({ method: route.method, path: route.path }, 'Route added')
+                    router.register(m, route.path, route.handler as types.RouteHandler, route);
+                });
+                logger?.info({ method: route.method, path: route.path }, 'Route added');
             },
 
             addRoutes(routes: types.RouteDefinition[]) {
-                routes.forEach(route => this.addRoute(route))
+                routes.forEach(route => this.addRoute(route));
             },
 
             getRoutes() {
-                return routes
+                return routes;
             }
-        }
+        };
 
-        return instance
+        return instance;
 	}
 
 // ╚══════════════════════════════════════════════════════════════════════════════════════╝
@@ -419,71 +419,71 @@
         request : Request,
         logger  : Logger | null,
         maxSize : number
-    ): Promise<any> {
-        const contentType = request.headers.get('content-type') || ''
+    ): Promise<unknown> {
+        const contentType = request.headers.get('content-type') || '';
 
         try {
             if (contentType.includes('application/json')) {
-				const text = await request.text()
+				const text = await request.text();
 
 				// Validate size after reading
 				if (text.length > maxSize) {
-					throw new types.ValidationError('Payload too large')
+					throw new types.ValidationError('Payload too large');
 				}
 
-				if (!text.trim()) return {}
+				if (!text.trim()) return {};
 
 				try {
-					return JSON.parse(text)
+					return JSON.parse(text);
 				} catch (e) {
 					logger?.warn({
 						error		: String(e),
 						bodyPreview	: text.substring(0, 100)
-					}, 'Invalid JSON in request body')
+					}, 'Invalid JSON in request body');
 
-					throw new types.ValidationError('Invalid JSON in request body')
+					throw new types.ValidationError('Invalid JSON in request body');
 				}
             }
 
             if (contentType.includes('application/x-www-form-urlencoded')) {
-                const text = await request.text()
+                const text = await request.text();
                 if (text.length > maxSize) {
-                    throw new types.ValidationError('Payload too large')
+                    throw new types.ValidationError('Payload too large');
                 }
 
-                return Object.fromEntries(new URLSearchParams(text))
+                return Object.fromEntries(new URLSearchParams(text));
             }
 
             if (contentType.includes('multipart/form-data')) {
                 // Note: FormData size can't be validated before parsing
-                return await request.formData()
+                return await request.formData();
             }
 
         } catch (e) {
-            if (e instanceof types.ValidationError) throw e
-            logger?.error({ error: String(e) }, 'Error parsing request body')
-            throw new types.ValidationError('Failed to parse request body')
+            if (e instanceof types.ValidationError) throw e;
+            logger?.error({ error: String(e) }, 'Error parsing request body');
+            throw new types.ValidationError('Failed to parse request body');
         }
 
-        return {}
+        return {};
     }
 
     // Better cookie parsing
     function parseCookies(cookieHeader: string): Map<string, string> {
-        const cookies = new Map<string, string>()
+        const cookies = new Map<string, string>();
 
-        if (!cookieHeader) return cookies
+        if (!cookieHeader) return cookies;
 
-        const pairs = cookieHeader.split(';')
+        const pairs = cookieHeader.split(';');
         for (const pair of pairs) {
-            const [key, ...valueParts] = pair.trim().split('=')
+            const [key, ...valueParts] = pair.trim().split('=');
             if (key) {
-            const value = valueParts.join('=') // Handle '=' in value
-            cookies.set(key, value ? decodeURIComponent(value) : '')
+            const value = valueParts.join('='); // Handle '=' in value
+            cookies.set(key, value ? decodeURIComponent(value) : '');
             }
         }
 
-        return cookies
+        return cookies;
     }
 
     // Create app context with request ID
@@ -491,18 +491,18 @@
         ip          : string,
         request     : Request,
         params      : Record<string, string>,
-        db          : any,
+        db          : sdb.DB | undefined,
         logger      : Logger | null,
         requestId   : string
     ): types.AppContext {
-        const url           = new URL(request.url)
-        const query         = Object.fromEntries(url.searchParams)
-        const headers       = request.headers
-        let statusCode      = 200
-        const cookieStore   = new Map<string, string>()
-        const parsedCookies = parseCookies(headers.get('cookie') || '')
+        const url           = new URL(request.url);
+        const query         = Object.fromEntries(url.searchParams);
+        const headers       = request.headers;
+        let statusCode      = 200;
+        const cookieStore   = new Map<string, string>();
+        const parsedCookies = parseCookies(headers.get('cookie') || '');
 
-        const ctx: any = {
+        const ctx: types.AppContext = {
             ip,
             request,
             params,
@@ -511,18 +511,18 @@
             db,
             logger,
             requestId,
-            get statusCode() { return statusCode },
-            set statusCode(code: number) { statusCode = code },
+            get statusCode() { return statusCode; },
+            set statusCode(code: number) { statusCode = code; },
             body: null,
 
-            json(data: any, status?: number): Response {
+            json(data: unknown, status?: number): Response {
                 return new Response(JSON.stringify(data), {
                     status  : status ?? statusCode,
                     headers : {
                         'Content-Type': 'application/json',
                         ...this._setCookieHeaders()
                     }
-                })
+                });
             },
 
             text(data: string, status?: number): Response {
@@ -532,7 +532,7 @@
                         'Content-Type': 'text/plain',
                         ...this._setCookieHeaders()
                     }
-                })
+                });
             },
 
             html(data: string, status?: number): Response {
@@ -542,7 +542,7 @@
                         'Content-Type': 'text/html; charset=utf-8',
                         ...this._setCookieHeaders()
                     }
-                })
+                });
             },
 
             redirect(url: string, status = 302): Response {
@@ -552,50 +552,50 @@
                         Location    : url,
                         ...this._setCookieHeaders()
                     }
-                })
+                });
             },
 
             file(path: string, contentType = 'application/octet-stream'): Response {
-                const file = Bun.file(path)
+                const file = Bun.file(path);
                 return new Response(file, {
                     headers: {
                         'Content-Type': contentType,
                         ...this._setCookieHeaders()
                     }
-                })
+                });
             },
 
             setCookie(name: string, value: string, options: types.CookieOptions = {}): types.AppContext {
-                let cookie = `${name}=${encodeURIComponent(value)}`
+                let cookie = `${name}=${encodeURIComponent(value)}`;
 
                 if (options.maxAge !== undefined) {
-                    cookie += `; Max-Age=${options.maxAge}`
+                    cookie += `; Max-Age=${options.maxAge}`;
                 }
                 if (options.expires) {
-                    cookie += `; Expires=${options.expires.toUTCString()}`
+                    cookie += `; Expires=${options.expires.toUTCString()}`;
                 }
                 if (options.path) {
-                    cookie += `; Path=${options.path}`
+                    cookie += `; Path=${options.path}`;
                 }
                 if (options.domain) {
-                    cookie += `; Domain=${options.domain}`
+                    cookie += `; Domain=${options.domain}`;
                 }
                 if (options.secure) {
-                    cookie += '; Secure'
+                    cookie += '; Secure';
                 }
                 if (options.httpOnly) {
-                    cookie += '; HttpOnly'
+                    cookie += '; HttpOnly';
                 }
                 if (options.sameSite) {
-                    cookie += `; SameSite=${options.sameSite}`
+                    cookie += `; SameSite=${options.sameSite}`;
                 }
 
-                cookieStore.set(name, cookie)
-                return ctx
+                cookieStore.set(name, cookie);
+                return ctx;
             },
 
             getCookie(name: string): string | undefined {
-                return parsedCookies.get(name)
+                return parsedCookies.get(name);
             },
 
             deleteCookie(name: string, options: Partial<types.CookieOptions> = {}): types.AppContext {
@@ -603,104 +603,105 @@
                     ...options,
                     maxAge: 0,
                     path: options.path || '/'
-                })
+                });
             },
 
             setHeader(key: string, value: string): types.AppContext {
-                headers.set(key, value)
-                return ctx
+                headers.set(key, value);
+                return ctx;
             },
 
             getHeader(key: string): string | undefined {
-                return headers.get(key) || undefined
+                return headers.get(key) || undefined;
             },
 
             status(code: number): types.AppContext {
-                statusCode = code
-                return ctx
+                statusCode = code;
+                return ctx;
             },
 
             _setCookieHeaders(): Record<string, string | string[]> {
-                const h: any = {}
+                const h: Record<string, string | string[]> = {};
                 if (cookieStore.size > 0) {
-                    h['Set-Cookie'] = Array.from(cookieStore.values())
+                    h['Set-Cookie'] = Array.from(cookieStore.values());
                 }
-                return h
+                return h;
             }
-        }
+        };
 
-        return ctx
+        return ctx;
     }
 
     // Better IP extraction with Bun server context
-    function getClientIp(request: Request, server?: any): string {
+    function getClientIp(request: Request, server?: unknown): string {
         // Check proxy headers first (for production behind reverse proxy)
-        const forwarded = request.headers.get('x-forwarded-for')
+        const forwarded = request.headers.get('x-forwarded-for');
         if (forwarded) {
-            const ips = forwarded.split(',').map(ip => ip.trim())
-            return ips[0] || 'unknown'
+            const ips = forwarded.split(',').map(ip => ip.trim());
+            return ips[0] || 'unknown';
         }
 
-        const realIp = request.headers.get('x-real-ip')
-        if (realIp) return realIp
+        const realIp = request.headers.get('x-real-ip');
+        if (realIp) return realIp;
 
         // Get IP from Bun server context (works for localhost)
         if (server) {
             try {
-                const remoteAddress = server.requestIP(request)
+                const serverWithRequestIP = server as { requestIP?: (req: Request) => { address?: string } | null };
+                const remoteAddress = serverWithRequestIP.requestIP?.(request);
                 if (remoteAddress?.address) {
-                    return remoteAddress.address
+                    return remoteAddress.address;
                 }
-            } catch (e) {
+            } catch {
                 // Fallback if requestIP fails
             }
         }
 
-        return 'unknown'
+        return 'unknown';
     }
 
     // CORS helper with proper configuration
     function handleCors(request: Request, config: types.ServerConfig): Headers {
-        const headers = new Headers()
+        const headers = new Headers();
 
         if (!config.security || typeof config.security !== 'object' || !config.security.cors) {
-            return headers
+            return headers;
         }
 
-        const corsConfig = typeof config.security.cors === 'object' ? config.security.cors : {}
-        const origin = request.headers.get('Origin')
+        const corsConfig = typeof config.security.cors === 'object' ? config.security.cors : {};
+        const origin = request.headers.get('Origin');
 
         if (origin) {
             if (typeof corsConfig.origin === 'function') {
                 if (corsConfig.origin(origin)) {
-                    headers.set('Access-Control-Allow-Origin', origin)
+                    headers.set('Access-Control-Allow-Origin', origin);
                 }
             } else if (Array.isArray(corsConfig.origin)) {
                 if (corsConfig.origin.includes(origin)) {
-                    headers.set('Access-Control-Allow-Origin', origin)
+                    headers.set('Access-Control-Allow-Origin', origin);
                 }
             } else if (typeof corsConfig.origin === 'string') {
-                headers.set('Access-Control-Allow-Origin', corsConfig.origin)
+                headers.set('Access-Control-Allow-Origin', corsConfig.origin);
             } else {
-                headers.set('Access-Control-Allow-Origin', origin)
+                headers.set('Access-Control-Allow-Origin', origin);
             }
 
-            const methods = corsConfig.methods || ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS']
-            headers.set('Access-Control-Allow-Methods', methods.join(', '))
+            const methods = corsConfig.methods || ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'];
+            headers.set('Access-Control-Allow-Methods', methods.join(', '));
 
-            const allowedHeaders = corsConfig.allowedHeaders || ['Content-Type', 'Authorization', 'X-Requested-With']
-            headers.set('Access-Control-Allow-Headers', allowedHeaders.join(', '))
+            const allowedHeaders = corsConfig.allowedHeaders || ['Content-Type', 'Authorization', 'X-Requested-With'];
+            headers.set('Access-Control-Allow-Headers', allowedHeaders.join(', '));
 
             if (corsConfig.credentials) {
-                headers.set('Access-Control-Allow-Credentials', 'true')
+                headers.set('Access-Control-Allow-Credentials', 'true');
             }
 
             if (corsConfig.maxAge) {
-                headers.set('Access-Control-Max-Age', corsConfig.maxAge.toString())
+                headers.set('Access-Control-Max-Age', corsConfig.maxAge.toString());
             }
         }
 
-        return headers
+        return headers;
     }
 
 // ╚══════════════════════════════════════════════════════════════════════════════════════╝
@@ -736,7 +737,7 @@
         unique,
         defaultValue,
         references
-    } from './mod/db';
+    } from '@je-es/sdb';
 
     // Export DB types
     export type {
@@ -746,7 +747,7 @@
         TableSchema,
         WhereCondition,
         QueryBuilder
-    } from './mod/db';
+    } from '@je-es/sdb';
 
     // Export StaticFileServer
     export { StaticFileServer, createStatic } from './mod/static';

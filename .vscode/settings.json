@@ -9,21 +9,23 @@
         "eslint.config.mjs": true,
         "bun.lock": true,
         "LICENSE": true,
-        ".gitignore": true,
         ".gitattributes": true,
         ".npmignore": true,
         "node_modules": true,
-        ".vscode": true
+        ".vscode": true,
+        ".gitignore": true,
+        "tsup.config.ts": true
     },
     "hide-files.files": [
         "tsconfig.json",
         "eslint.config.mjs",
         "bun.lock",
         "LICENSE",
-        ".gitignore",
         ".gitattributes",
         ".npmignore",
         "node_modules",
-        ".vscode"
+        ".vscode",
+        ".gitignore",
+        "tsup.config.ts"
     ]
 }

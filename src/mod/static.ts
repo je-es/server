@@ -7,9 +7,9 @@
 
 // ╔════════════════════════════════════════ PACK ════════════════════════════════════════╗
 
-    import { join, extname, resolve, relative } from 'path'
-    import { existsSync, statSync } from 'fs'
-    import type { AppContext } from '../types.d'
+    import { join, extname, resolve, relative } from 'path';
+    import { existsSync, statSync } from 'fs';
+    import type { AppContext } from '../types.d';
 
 // ╚══════════════════════════════════════════════════════════════════════════════════════╝
 
@@ -18,24 +18,32 @@
 // ╔════════════════════════════════════════ TYPE ════════════════════════════════════════╗
 
     export interface StaticConfig {
-        path            : string        // URL path prefix (e.g., '/public' or '/static')
-        directory       : string        // Local directory to serve from
-        maxAge?         : number        // Cache control in seconds (default: 3600)
-        index?          : string[]      // Index files (default: ['index.html'])
-        dotfiles?       : 'allow' | 'deny' | 'ignore'  // How to handle dotfiles (default: 'deny')
-        etag?           : boolean       // Enable ETag headers (default: true)
-        lastModified?   : boolean       // Enable Last-Modified headers (default: true)
-        immutable?      : boolean       // Add immutable to cache-control (default: false)
-        extensions?     : string[]      // Try these extensions if file not found (e.g., ['html', 'htm'])
-        fallthrough?    : boolean       // Continue to next handler if file not found (default: false)
-        setHeaders?     : (ctx: AppContext, path: string) => void  // Custom header setter
+        path            : string;        // URL path prefix (e.g., '/public' or '/static')
+        directory       : string;        // Local directory to serve from
+        maxAge?         : number;        // Cache control in seconds (default: 3600)
+        index?          : string[];      // Index files (default: ['index.html'])
+        dotfiles?       : 'allow' | 'deny' | 'ignore';  // How to handle dotfiles (default: 'deny')
+        etag?           : boolean;       // Enable ETag headers (default: true)
+        lastModified?   : boolean;       // Enable Last-Modified headers (default: true)
+        immutable?      : boolean;       // Add immutable to cache-control (default: false)
+        extensions?     : string[];      // Try these extensions if file not found (e.g., ['html', 'htm'])
+        fallthrough?    : boolean;       // Continue to next handler if file not found (default: false)
+        setHeaders?     : (ctx: AppContext, path: string) => void;  // Custom header setter
     }
 
     interface CacheEntry {
-        etag            : string
-        lastModified    : Date
-        size            : number
-        mtime           : number
+        etag            : string;
+        lastModified    : Date;
+        size            : number;
+        mtime           : number;
+    }
+
+    interface FileStats {
+        size: number;
+        mtime: Date;
+        mtimeMs: number;
+        isDirectory(): boolean;
+        isFile(): boolean;
     }
 
 // ╚══════════════════════════════════════════════════════════════════════════════════════╝
@@ -48,10 +56,10 @@
 
         // ┌──────────────────────────────── INIT ──────────────────────────────┐
 
-            private config          : Required<Omit<StaticConfig, 'setHeaders'>> & Pick<StaticConfig, 'setHeaders'>
-            private resolvedDir     : string
-            private fileCache       = new Map<string, CacheEntry>()
-            private readonly CACHE_MAX_SIZE = 1000
+            private config          : Required<Omit<StaticConfig, 'setHeaders'>> & Pick<StaticConfig, 'setHeaders'>;
+            private resolvedDir     : string;
+            private fileCache       = new Map<string, CacheEntry>();
+            private readonly CACHE_MAX_SIZE = 1000;
 
         // └────────────────────────────────────────────────────────────────────┘
 
@@ -61,16 +69,16 @@
             constructor(config: StaticConfig) {
                 // Validate directory exists
                 if (!existsSync(config.directory)) {
-                    throw new Error(`Static directory does not exist: ${config.directory}`)
+                    throw new Error(`Static directory does not exist: ${config.directory}`);
                 }
 
-                const stats = statSync(config.directory)
+                const stats = statSync(config.directory);
                 if (!stats.isDirectory()) {
-                    throw new Error(`Static path is not a directory: ${config.directory}`)
+                    throw new Error(`Static path is not a directory: ${config.directory}`);
                 }
 
                 // Resolve absolute path to prevent directory traversal
-                this.resolvedDir = resolve(config.directory)
+                this.resolvedDir = resolve(config.directory);
 
                 // Set defaults
                 this.config = {
@@ -85,7 +93,7 @@
                     extensions      : config.extensions ?? [],
                     fallthrough     : config.fallthrough ?? false,
                     setHeaders      : config.setHeaders
-                }
+                };
             }
 
         // └────────────────────────────────────────────────────────────────────┘
@@ -96,63 +104,63 @@
             /**
              * Create request handler for static files
              */
-            handler() {
+            handler(): (ctx: AppContext) => Promise<Response> {
                 return async (ctx: AppContext): Promise<Response> => {
-                    const requestPath = ctx.request.url
-                    const url = new URL(requestPath)
-                    let pathname = url.pathname
+                    const requestPath = ctx.request.url;
+                    const url = new URL(requestPath);
+                    let pathname = url.pathname;
 
                     // Remove prefix from pathname
                     if (pathname.startsWith(this.config.path)) {
-                        pathname = pathname.slice(this.config.path.length)
+                        pathname = pathname.slice(this.config.path.length);
                     }
 
                     // Decode URI component
                     try {
-                        pathname = decodeURIComponent(pathname)
-                    } catch (e) {
-                        return ctx.json({ error: 'Invalid URL encoding' }, 400)
+                        pathname = decodeURIComponent(pathname);
+                    } catch {
+                        return ctx.json({ error: 'Invalid URL encoding' }, 400);
                     }
 
                     // Security: Prevent directory traversal
                     if (pathname.includes('..') || pathname.includes('\\')) {
-                        return ctx.json({ error: 'Forbidden' }, 403)
+                        return ctx.json({ error: 'Forbidden' }, 403);
                     }
 
                     // Handle dotfiles
                     if (this.config.dotfiles !== 'allow' && pathname.split('/').some(p => p.startsWith('.'))) {
                         if (this.config.dotfiles === 'deny') {
-                            return ctx.json({ error: 'Forbidden' }, 403)
+                            return ctx.json({ error: 'Forbidden' }, 403);
                         }
                         // 'ignore' - treat as not found
-                        return this.handleNotFound(ctx)
+                        return this.handleNotFound(ctx);
                     }
 
                     // Resolve file path
-                    const filePath = this.resolveFilePath(pathname)
+                    const filePath = this.resolveFilePath(pathname);
                     if (!filePath) {
-                        return this.handleNotFound(ctx)
+                        return this.handleNotFound(ctx);
                     }
 
                     // Check if file exists and is within allowed directory
                     if (!this.isPathSafe(filePath)) {
-                        return ctx.json({ error: 'Forbidden' }, 403)
+                        return ctx.json({ error: 'Forbidden' }, 403);
                     }
 
                     if (!existsSync(filePath)) {
-                        return this.handleNotFound(ctx)
+                        return this.handleNotFound(ctx);
                     }
 
-                    const stats = statSync(filePath)
+                    const stats = statSync(filePath) as FileStats;
 
                     // If directory, try to serve index file
                     if (stats.isDirectory()) {
-                        return this.serveDirectory(ctx, filePath, pathname)
+                        return this.serveDirectory(ctx, filePath, pathname);
                     }
 
                     // Serve file
-                    return this.serveFile(ctx, filePath, stats)
-                }
+                    return this.serveFile(ctx, filePath, stats);
+                };
             }
 
             /**
@@ -160,7 +168,7 @@
              */
             getPathPattern(): string {
                 // Match the prefix and anything after it
-                return `${this.config.path}/*`
+                return `${this.config.path}/*`;
             }
 
         // └────────────────────────────────────────────────────────────────────┘
@@ -171,61 +179,61 @@
             private resolveFilePath(pathname: string): string | null {
                 // Remove leading slash
                 if (pathname.startsWith('/')) {
-                    pathname = pathname.slice(1)
+                    pathname = pathname.slice(1);
                 }
 
-                const filePath = join(this.resolvedDir, pathname)
+                const filePath = join(this.resolvedDir, pathname);
 
                 // Try with extensions if file doesn't exist
                 if (!existsSync(filePath) && this.config.extensions.length > 0) {
                     for (const ext of this.config.extensions) {
-                        const withExt = `${filePath}.${ext}`
+                        const withExt = `${filePath}.${ext}`;
                         if (existsSync(withExt)) {
-                            return withExt
+                            return withExt;
                         }
                     }
                 }
 
-                return filePath
+                return filePath;
             }
 
             private isPathSafe(filePath: string): boolean {
                 // Ensure the resolved path is within the static directory
-                const rel = relative(this.resolvedDir, resolve(filePath))
-                return !rel.startsWith('..') && !resolve(filePath).startsWith('..')
+                const rel = relative(this.resolvedDir, resolve(filePath));
+                return !rel.startsWith('..') && !resolve(filePath).startsWith('..');
             }
 
-            private async serveDirectory(ctx: AppContext, dirPath: string, pathname: string): Promise<Response> {
+            private async serveDirectory(ctx: AppContext, dirPath: string, _: string): Promise<Response> {
                 // Try index files
                 for (const indexFile of this.config.index) {
-                    const indexPath = join(dirPath, indexFile)
+                    const indexPath = join(dirPath, indexFile);
                     if (existsSync(indexPath)) {
-                        const stats = statSync(indexPath)
+                        const stats = statSync(indexPath) as FileStats;
                         if (stats.isFile()) {
-                            return this.serveFile(ctx, indexPath, stats)
+                            return this.serveFile(ctx, indexPath, stats);
                         }
                     }
                 }
 
                 // No index file found
-                return this.handleNotFound(ctx)
+                return this.handleNotFound(ctx);
             }
 
-            private async serveFile(ctx: AppContext, filePath: string, stats: any): Promise<Response> {
-                const method = ctx.request.method.toUpperCase()
+            private async serveFile(ctx: AppContext, filePath: string, stats: FileStats): Promise<Response> {
+                const method = ctx.request.method.toUpperCase();
 
                 // Only allow GET and HEAD
                 if (method !== 'GET' && method !== 'HEAD') {
-                    return ctx.json({ error: 'Method not allowed' }, 405)
+                    return ctx.json({ error: 'Method not allowed' }, 405);
                 }
 
                 // Get or create cache entry
-                const cacheKey = filePath
-                let cacheEntry = this.fileCache.get(cacheKey)
+                const cacheKey = filePath;
+                let cacheEntry = this.fileCache.get(cacheKey);
 
                 // Check if cache is stale
                 if (cacheEntry && cacheEntry.mtime !== stats.mtimeMs) {
-                    cacheEntry = undefined
+                    cacheEntry = undefined;
                 }
 
                 if (!cacheEntry) {
@@ -234,44 +242,44 @@
                         lastModified    : new Date(stats.mtime),
                         size            : stats.size,
                         mtime           : stats.mtimeMs
-                    }
+                    };
 
                     // Add to cache with size limit
                     if (this.fileCache.size >= this.CACHE_MAX_SIZE) {
-                        const firstKey = this.fileCache.keys().next().value
-                        if (firstKey) this.fileCache.delete(firstKey)
+                        const firstKey = this.fileCache.keys().next().value;
+                        if (firstKey) this.fileCache.delete(firstKey);
                     }
-                    this.fileCache.set(cacheKey, cacheEntry)
+                    this.fileCache.set(cacheKey, cacheEntry);
                 }
 
                 // Check conditional requests
-                const ifNoneMatch = ctx.request.headers.get('if-none-match')
-                const ifModifiedSince = ctx.request.headers.get('if-modified-since')
+                const ifNoneMatch = ctx.request.headers.get('if-none-match');
+                const ifModifiedSince = ctx.request.headers.get('if-modified-since');
 
                 if (this.config.etag && ifNoneMatch === cacheEntry.etag) {
                     return new Response(null, {
                         status: 304,
                         headers: this.buildHeaders(filePath, cacheEntry)
-                    })
+                    });
                 }
 
                 if (this.config.lastModified && ifModifiedSince) {
-                    const ifModDate = new Date(ifModifiedSince)
+                    const ifModDate = new Date(ifModifiedSince);
                     if (cacheEntry.lastModified <= ifModDate) {
                         return new Response(null, {
                             status: 304,
                             headers: this.buildHeaders(filePath, cacheEntry)
-                        })
+                        });
                     }
                 }
 
                 // Read file using Bun.file
-                const file = Bun.file(filePath)
-                const headers = this.buildHeaders(filePath, cacheEntry)
+                const file = Bun.file(filePath);
+                const headers = this.buildHeaders(filePath, cacheEntry);
 
                 // Set custom headers if provided
                 if (this.config.setHeaders) {
-                    this.config.setHeaders(ctx, filePath)
+                    this.config.setHeaders(ctx, filePath);
                 }
 
                 // Return 200 with file content (or just headers for HEAD)
@@ -279,85 +287,85 @@
                     return new Response(null, {
                         status: 200,
                         headers
-                    })
+                    });
                 }
 
                 return new Response(file, {
                     status: 200,
                     headers
-                })
+                });
             }
 
             private buildHeaders(filePath: string, cache: CacheEntry): Headers {
-                const headers = new Headers()
+                const headers = new Headers();
 
                 // Content-Type
-                const mimeType = this.getMimeType(filePath)
-                headers.set('Content-Type', mimeType)
+                const mimeType = this.getMimeType(filePath);
+                headers.set('Content-Type', mimeType);
 
                 // Content-Length
-                headers.set('Content-Length', cache.size.toString())
+                headers.set('Content-Length', cache.size.toString());
 
                 // ETag
                 if (this.config.etag) {
-                    headers.set('ETag', cache.etag)
+                    headers.set('ETag', cache.etag);
                 }
 
                 // Last-Modified
                 if (this.config.lastModified) {
-                    headers.set('Last-Modified', cache.lastModified.toUTCString())
+                    headers.set('Last-Modified', cache.lastModified.toUTCString());
                 }
 
                 // Cache-Control
                 if (this.config.maxAge > 0) {
-                    let cacheControl = `public, max-age=${this.config.maxAge}`
+                    let cacheControl = `public, max-age=${this.config.maxAge}`;
                     if (this.config.immutable) {
-                        cacheControl += ', immutable'
+                        cacheControl += ', immutable';
                     }
-                    headers.set('Cache-Control', cacheControl)
+                    headers.set('Cache-Control', cacheControl);
                 } else {
-                    headers.set('Cache-Control', 'no-cache')
+                    headers.set('Cache-Control', 'no-cache');
                 }
 
                 // Accept-Ranges for partial content support
-                headers.set('Accept-Ranges', 'bytes')
+                headers.set('Accept-Ranges', 'bytes');
 
-                return headers
+                return headers;
             }
 
-            private generateEtag(stats: any): string {
+            private generateEtag(stats: FileStats): string {
                 // Simple ETag: size-mtime
-                return `"${stats.size.toString(16)}-${stats.mtimeMs.toString(16)}"`
+                return `"${stats.size.toString(16)}-${stats.mtimeMs.toString(16)}"`;
             }
 
             private getMimeType(filePath: string): string {
-                const ext = extname(filePath).toLowerCase()
-                return MIME_TYPES[ext] || 'application/octet-stream'
+                const ext = extname(filePath).toLowerCase();
+                return MIME_TYPES[ext] || 'application/octet-stream';
             }
 
             private handleNotFound(ctx: AppContext): Response {
                 if (this.config.fallthrough) {
                     // Let the next handler deal with it
-                    return ctx.json({ error: 'Not Found' }, 404)
+                    return ctx.json({ error: 'Not Found' }, 404);
                 }
-                return ctx.json({ error: 'Not Found' }, 404)
+                return ctx.json({ error: 'Not Found' }, 404);
             }
 
             /**
              * Clear file cache
              */
-            clearCache() {
-                this.fileCache.clear()
+            clearCache(): void {
+                this.fileCache.clear();
             }
 
             /**
              * Get cache statistics
              */
-            getCacheStats() {
+            getCacheStats(): { entries: number; maxSize: number } {
                 return {
                     entries: this.fileCache.size,
                     maxSize: this.CACHE_MAX_SIZE
-                }
+                };
             }
 
         // └────────────────────────────────────────────────────────────────────┘
@@ -374,7 +382,7 @@
      * Helper function to create static file server
      */
     export function createStatic(config: StaticConfig): StaticFileServer {
-        return new StaticFileServer(config)
+        return new StaticFileServer(config);
     }
 
 // ╚══════════════════════════════════════════════════════════════════════════════════════╝
@@ -458,6 +466,6 @@
         '.wasm'         : 'application/wasm',
         '.manifest'     : 'text/cache-manifest',
         '.webmanifest'  : 'application/manifest+json',
-    }
+    };
 
 // ╚══════════════════════════════════════════════════════════════════════════════════════╝

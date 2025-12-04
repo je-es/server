@@ -6,14 +6,30 @@
 
 // ╔════════════════════════════════════════ TYPE ════════════════════════════════════════╗
 
-	export interface RegexRoute {
-		pattern		: RegExp
-		method		: string
-		handler		: any
-		key			: string
-	}
+    // Import AppContext from types to maintain type consistency
+    import type { AppContext } from '../types.d';
 
-	export type RegexRoutes = Array<RegexRoute>
+    export type RouteHandler = (ctx: AppContext) => Response | Promise<Response>;
+
+    export interface RegexRoute {
+        pattern: RegExp;
+        method: string;
+        handler: RouteHandler;
+        key: string;
+    }
+
+    export type RegexRoutes = RegexRoute[];
+
+    export interface RouteMatch {
+        handler: RouteHandler;
+        params: Record<string, string>;
+    }
+
+    export interface RouteInfo {
+        method: string;
+        path: string;
+        handler: RouteHandler;
+    }
 
 // ╚══════════════════════════════════════════════════════════════════════════════════════╝
 
@@ -25,127 +41,127 @@
 
         // ┌──────────────────────────────── INIT ──────────────────────────────┐
 
-			private routes 			= new Map<string, any>()
-			private regexRoutes		: RegexRoutes = []
+            private routes = new Map<string, RouteHandler>();
+            private regexRoutes: RegexRoutes = [];
 
         // └────────────────────────────────────────────────────────────────────┘
 
 
         // ┌──────────────────────────────── MAIN ──────────────────────────────┐
 
-			match(method: string, path: string): { handler: any; params: Record<string, string> } | null {
-				const key = `${method}:${path}`
+            match(method: string, path: string): RouteMatch | null {
+                const key = `${method}:${path}`;
 
-				// Try static route first (faster)
-				if (this.routes.has(key)) {
-					return { handler: this.routes.get(key), params: {} }
-				}
+                // Try static route first (faster)
+                if (this.routes.has(key)) {
+                    return { handler: this.routes.get(key)!, params: {} };
+                }
 
-				// Try dynamic routes
-				for (const route of this.regexRoutes) {
-					if (route.method === method) {
-						const match = path.match(route.pattern)
-						if (match) {
-							// Extract named groups if they exist
-							const params = match.groups || {}
-							return { handler: route.handler, params }
-						}
-					}
-				}
+                // Try dynamic routes
+                for (const route of this.regexRoutes) {
+                    if (route.method === method) {
+                        const match = path.match(route.pattern);
+                        if (match) {
+                            // Extract named groups if they exist
+                            const params = match.groups || {};
+                            return { handler: route.handler, params };
+                        }
+                    }
+                }
 
-				return null
-			}
+                return null;
+            }
 
-			getAll() {
-				const staticRoutes = Array.from(this.routes.entries()).map(([key, handler]) => {
-					const colonIndex = key.indexOf(':')
-					const method = key.substring(0, colonIndex)
-					const path = key.substring(colonIndex + 1)
-					return { method, path, handler }
-				})
+            getAll(): RouteInfo[] {
+                const staticRoutes = Array.from(this.routes.entries()).map(([key, handler]) => {
+                    const colonIndex = key.indexOf(':');
+                    const method = key.substring(0, colonIndex);
+                    const path = key.substring(colonIndex + 1);
+                    return { method, path, handler };
+                });
 
-				const dynamicRoutes = this.regexRoutes.map(route => {
-					const colonIndex = route.key.indexOf(':')
-					return {
-						method: route.method,
-						path: route.key.substring(colonIndex + 1),
-						handler: route.handler
-					}
-				})
+                const dynamicRoutes = this.regexRoutes.map(route => {
+                    const colonIndex = route.key.indexOf(':');
+                    return {
+                        method: route.method,
+                        path: route.key.substring(colonIndex + 1),
+                        handler: route.handler
+                    };
+                });
 
-				return [...staticRoutes, ...dynamicRoutes]
-			}
+                return [...staticRoutes, ...dynamicRoutes];
+            }
 
-			clear() {
-				this.routes.clear()
-				this.regexRoutes = []
-			}
+            clear(): void {
+                this.routes.clear();
+                this.regexRoutes = [];
+            }
 
-			remove(method: string, path: string): boolean {
-				const key = `${method}:${path}`
+            remove(method: string, path: string): boolean {
+                const key = `${method}:${path}`;
 
-				if (this.routes.has(key)) {
-					this.routes.delete(key)
-					return true
-				}
+                if (this.routes.has(key)) {
+                    this.routes.delete(key);
+                    return true;
+                }
 
-				const index = this.regexRoutes.findIndex(r => r.key === key)
-				if (index >= 0) {
-					this.regexRoutes.splice(index, 1)
-					return true
-				}
+                const index = this.regexRoutes.findIndex(r => r.key === key);
+                if (index >= 0) {
+                    this.regexRoutes.splice(index, 1);
+                    return true;
+                }
 
-				return false
-			}
+                return false;
+            }
 
-			register(method: string, path: string, handler: any, config: any = {}) {
-				const key = `${method}:${path}`
+            register(method: string, path: string, handler: RouteHandler, _: unknown = {}): void {
+                const key = `${method}:${path}`;
 
-				// Check if path needs regex (has :params or wildcards)
-				if (path.includes(':') || path.includes('*')) {
-					// Dynamic route with params or wildcards
-					const pattern = this.pathToRegex(path)
+                // Check if path needs regex (has :params or wildcards)
+                if (path.includes(':') || path.includes('*')) {
+                    // Dynamic route with params or wildcards
+                    const pattern = this.pathToRegex(path);
 
-					// Check if route already exists to prevent duplicates
-					const existingIndex = this.regexRoutes.findIndex(r => r.key === key)
+                    // Check if route already exists to prevent duplicates
+                    const existingIndex = this.regexRoutes.findIndex(r => r.key === key);
 
-					const route = {
-						pattern,
-						method,
-						handler,
-						key
-					}
+                    const route: RegexRoute = {
+                        pattern,
+                        method,
+                        handler,
+                        key
+                    };
 
-					if (existingIndex >= 0) {
-						// Update existing route
-						this.regexRoutes[existingIndex] = route
-					} else {
-						// Add new route
-						this.regexRoutes.push(route)
-					}
-				} else {
-					// Static route
-					this.routes.set(key, handler)
-				}
-			}
+                    if (existingIndex >= 0) {
+                        // Update existing route
+                        this.regexRoutes[existingIndex] = route;
+                    } else {
+                        // Add new route
+                        this.regexRoutes.push(route);
+                    }
+                } else {
+                    // Static route
+                    this.routes.set(key, handler);
+                }
+            }
 
         // └────────────────────────────────────────────────────────────────────┘
 
 
         // ┌──────────────────────────────── HELP ──────────────────────────────┐
 
-			private pathToRegex(path: string): RegExp {
-				// Escape special regex characters except ':' and '*'
-				let pattern = path.replace(/[.+?^${}()|[\]\\]/g, '\\$&')
+            private pathToRegex(path: string): RegExp {
+                // Escape special regex characters except ':' and '*'
+                let pattern = path.replace(/[.+?^${}()|[\]\\]/g, '\\$&');
 
-				// Replace :param with named capture groups
-				pattern = pattern.replace(/:(\w+)/g, '(?<$1>[^/]+)')
+                // Replace :param with named capture groups
+                pattern = pattern.replace(/:(\w+)/g, '(?<$1>[^/]+)');
 
-				// Replace * with wildcard pattern (matches everything including slashes)
-				pattern = pattern.replace(/\*/g, '.*')
+                // Replace * with wildcard pattern (matches everything including slashes)
+                pattern = pattern.replace(/\*/g, '.*');
 
-				return new RegExp(`^${pattern}$`)
-			}
+                return new RegExp(`^${pattern}$`);
+            }
 
         // └────────────────────────────────────────────────────────────────────┘
 

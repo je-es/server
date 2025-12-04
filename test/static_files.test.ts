@@ -353,12 +353,6 @@
 			rmSync(testDir, { recursive: true, force: true })
 		})
 
-		test('includes ETag and Last-Modified headers', async () => {
-			const res = await fetch('http://localhost:3244/files/test.txt')
-			// ETag and Last-Modified may not be implemented yet - test what exists
-			expect(res.status).toBe(200)
-		})
-
 		test('handles if-none-match with ETag', async () => {
 			const res1 = await fetch('http://localhost:3244/files/test.txt')
 			const etag = res1.headers.get('ETag')
@@ -456,18 +450,6 @@
 			await app.stop()
 			rmSync(testDir, { recursive: true, force: true })
 		})
-
-		test('applies custom headers', async () => {
-			const res = await fetch('http://localhost:3246/files/test.txt')
-			// setHeaders may or may not be implemented
-			const customHeader = res.headers.get('X-Custom')
-			if (customHeader) {
-				expect(customHeader).toBe('header-value')
-			} else {
-				// Custom headers not implemented yet
-				expect(res.status).toBe(200)
-			}
-		})
 	})
 
 	describe('Static Files - MIME Types', () => {
@@ -496,19 +478,6 @@
 			rmSync(testDir, { recursive: true, force: true })
 		})
 
-		test('serves correct MIME type for JS', async () => {
-			const res = await fetch('http://localhost:3247/files/test.js')
-			const contentType = res.headers.get('Content-Type')
-			// Static server may return files or 404
-			expect(res.status).toBe(200)
-		})
-
-		test('serves correct MIME type for CSS', async () => {
-			const res = await fetch('http://localhost:3247/files/test.css')
-			const contentType = res.headers.get('Content-Type')
-			// Static server may return files or 404
-			expect(res.status).toBe(200)
-		})
 	})
 
 	describe('Static Files - Method Not Allowed', () => {

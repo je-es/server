@@ -7,25 +7,23 @@
         "**/Thumbs.db": true,
         "tsconfig.json": true,
         "eslint.config.mjs": true,
-        "bun.lock": true,
         "LICENSE": true,
         ".gitattributes": true,
         ".npmignore": true,
-        "node_modules": true,
         ".vscode": true,
         ".gitignore": true,
-        "tsup.config.ts": true
+        "tsup.config.ts": true,
+        "bun.lock": true
     },
     "hide-files.files": [
         "tsconfig.json",
         "eslint.config.mjs",
-        "bun.lock",
         "LICENSE",
         ".gitattributes",
         ".npmignore",
-        "node_modules",
         ".vscode",
         ".gitignore",
-        "tsup.config.ts"
+        "tsup.config.ts",
+        "bun.lock"
     ]
 }

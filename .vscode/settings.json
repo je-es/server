@@ -14,7 +14,8 @@
         ".gitignore": true,
         "tsup.config.ts": true,
         "bun.lock": true,
-        "node_modules": true
+        "node_modules": true,
+        ".github": true
     },
     "hide-files.files": [
         "tsconfig.json",
@@ -26,6 +27,7 @@
         ".gitignore",
         "tsup.config.ts",
         "bun.lock",
-        "node_modules"
+        "node_modules",
+        ".github"
     ]
 }

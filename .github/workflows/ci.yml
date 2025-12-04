@@ -27,7 +27,7 @@ jobs:
         run: bun install @solution-lib/space -g
 
       - name: Install dependencies
-        run: bunx space install
+        run: bun install
 
       - name: Run tests
         run: bunx space test
@@ -49,7 +49,7 @@ jobs:
         run: bun install @solution-lib/space -g
 
       - name: Install dependencies
-        run: bunx space install
+        run: bun install
 
       - name: Run linter
         run: bunx space lint
@@ -68,7 +68,7 @@ jobs:
         run: bun install @solution-lib/space -g
 
       - name: Install dependencies
-        run: bunx space install
+        run: bun install
 
       - name: Run tests with coverage
         run: bunx space test --coverage

@@ -1,6 +1,5 @@
-// test/4-security.test.ts
+// test/security.test.ts
 //
-// Tests for security features: CORS, rate limiting, request size limits, sanitization
 // Developed with ❤️ by Maysara.
 
 

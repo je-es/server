@@ -1,6 +1,5 @@
-// test/9-error-handling.test.ts
+// test/error_handling.test.ts
 //
-// Tests for error handling: validation, timeouts, custom errors
 // Developed with ❤️ by Maysara.
 
 

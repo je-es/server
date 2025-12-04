@@ -1,6 +1,5 @@
-// test/2-routing.test.ts
+// test/routing.test.ts
 //
-// Tests for routing: dynamic routes, parameters, wildcards, route registration
 // Developed with ❤️ by Maysara.
 
 

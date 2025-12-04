@@ -1,6 +1,5 @@
-// test/8-health-lifecycle.test.ts
+// test/health_lifecycle.test.ts
 //
-// Tests for health endpoints, server lifecycle (startup/shutdown)
 // Developed with ❤️ by Maysara.
 
 

@@ -1,8 +1,5 @@
-// test/5-database-integration.test.ts
+// test/database_int.test.ts
 //
-// Tests for server's integration with @je-es/sdb
-// NOTE: We don't test DB operations themselves (already tested in @je-es/sdb)
-// We test that the server correctly provides DB access to routes
 // Developed with ❤️ by Maysara.
 
 

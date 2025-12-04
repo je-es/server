@@ -1,6 +1,5 @@
-// test/1-http-methods.test.ts
+// test/http_methods.test.ts
 //
-// Tests for basic HTTP method handling (GET, POST, PUT, PATCH, DELETE)
 // Developed with ❤️ by Maysara.
 
 

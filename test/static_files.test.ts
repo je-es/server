@@ -1,6 +1,5 @@
-// test/7-static-files.test.ts
+// test/static-files.test.ts
 //
-// Tests for static file serving functionality
 // Developed with ❤️ by Maysara.
 
 

@@ -1,8 +1,5 @@
-// test/6-logger-integration.test.ts
+// test/logger_int.test.ts
 //
-// Tests for server's integration with @je-es/slog
-// NOTE: We don't test Logger methods themselves (already tested in @je-es/slog)
-// We test that the server correctly provides Logger to routes and uses it
 // Developed with ❤️ by Maysara.
 
 

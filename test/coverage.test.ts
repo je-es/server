@@ -1,6 +1,5 @@
-// test/10_complete_coverage.test.ts
+// test/complete_coverage.test.ts
 //
-// Additional tests to achieve 100% code coverage
 // Developed with ❤️ by Maysara.
 
 

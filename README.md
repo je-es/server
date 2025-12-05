@@ -10,7 +10,7 @@
 <div align="center">
     <img src="https://img.shields.io/badge/v-0.1.4-black"/>
     <img src="https://img.shields.io/badge/🔥-@je--es-black"/>
-    <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
+    <br>
     <img src="https://github.com/je-es/server/actions/workflows/ci.yml/badge.svg" alt="CI" />
     <img src="https://img.shields.io/badge/coverage-100%25-brightgreen" alt="Test Coverage" />
     <img src="https://img.shields.io/github/issues/je-es/server?style=flat" alt="Github Repo Issues" />

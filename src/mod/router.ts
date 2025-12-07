@@ -16,6 +16,7 @@
         method: string;
         handler: RouteHandler;
         key: string;
+        metadata?: unknown;
     }
 
     export type RegexRoutes = RegexRoute[];
@@ -23,6 +24,7 @@
     export interface RouteMatch {
         handler: RouteHandler;
         params: Record<string, string>;
+        metadata?: unknown;
     }
 
     export interface RouteInfo {
@@ -41,7 +43,7 @@
 
         // ┌──────────────────────────────── INIT ──────────────────────────────┐
 
-            private routes = new Map<string, RouteHandler>();
+            private routes = new Map<string, { handler: RouteHandler; metadata?: unknown }>();
             private regexRoutes: RegexRoutes = [];
 
         // └────────────────────────────────────────────────────────────────────┘
@@ -54,7 +56,12 @@
 
                 // Try static route first (faster)
                 if (this.routes.has(key)) {
-                    return { handler: this.routes.get(key)!, params: {} };
+                    const route = this.routes.get(key)!;
+                    return {
+                        handler: route.handler,
+                        params: {},
+                        metadata: route.metadata
+                    };
                 }
 
                 // Try dynamic routes
@@ -64,7 +71,11 @@
                         if (match) {
                             // Extract named groups if they exist
                             const params = match.groups || {};
-                            return { handler: route.handler, params };
+                            return {
+                                handler: route.handler,
+                                params,
+                                metadata: route.metadata
+                            };
                         }
                     }
                 }
@@ -73,11 +84,11 @@
             }
 
             getAll(): RouteInfo[] {
-                const staticRoutes = Array.from(this.routes.entries()).map(([key, handler]) => {
+                const staticRoutes = Array.from(this.routes.entries()).map(([key, route]) => {
                     const colonIndex = key.indexOf(':');
                     const method = key.substring(0, colonIndex);
                     const path = key.substring(colonIndex + 1);
-                    return { method, path, handler };
+                    return { method, path, handler: route.handler };
                 });
 
                 const dynamicRoutes = this.regexRoutes.map(route => {
@@ -114,7 +125,7 @@
                 return false;
             }
 
-            register(method: string, path: string, handler: RouteHandler, _: unknown = {}): void {
+            register(method: string, path: string, handler: RouteHandler, metadata: unknown = {}): void {
                 const key = `${method}:${path}`;
 
                 // Check if path needs regex (has :params or wildcards)
@@ -129,7 +140,8 @@
                         pattern,
                         method,
                         handler,
-                        key
+                        key,
+                        metadata
                     };
 
                     if (existingIndex >= 0) {
@@ -141,7 +153,7 @@
                     }
                 } else {
                     // Static route
-                    this.routes.set(key, handler);
+                    this.routes.set(key, { handler, metadata });
                 }
             }
 

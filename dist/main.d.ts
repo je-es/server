@@ -248,6 +248,7 @@ type RouteHandler = (ctx: AppContext) => Response | Promise<Response>;
 interface RouteMatch {
     handler: RouteHandler;
     params: Record<string, string>;
+    metadata?: unknown;
 }
 interface RouteInfo {
     method: string;
@@ -261,7 +262,7 @@ declare class Router {
     getAll(): RouteInfo[];
     clear(): void;
     remove(method: string, path: string): boolean;
-    register(method: string, path: string, handler: RouteHandler, _?: unknown): void;
+    register(method: string, path: string, handler: RouteHandler, metadata?: unknown): void;
     private pathToRegex;
 }
 

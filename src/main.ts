@@ -64,9 +64,7 @@
                 // Check request size from header
                 const contentLength = request.headers.get('content-length');
                 if (contentLength && parseInt(contentLength) > maxReqSize) {
-
                     logger?.warn({ requestId, size: contentLength, ip }, 'Request too large');
-
                     return new Response(JSON.stringify({ error: 'Payload too large' }), {
 						status	: 413,
 						headers	: { 'Content-Type': 'application/json' }
@@ -91,11 +89,11 @@
                     : ip;
 
                     if (!security.checkRateLimit(rateLimitKey, max, windowMs)) {
-                    logger?.warn({ requestId, ip, key: rateLimitKey }, 'Rate limit exceeded');
-                    return new Response(
-                        JSON.stringify({ error: rateLimitCfg.message || 'Too many requests' }),
-                        { status: 429, headers: { 'Content-Type': 'application/json' } }
-                    );
+                        logger?.warn({ requestId, ip, key: rateLimitKey }, 'Rate limit exceeded');
+                        return new Response(
+                            JSON.stringify({ error: rateLimitCfg.message || 'Too many requests' }),
+                            { status: 429, headers: { 'Content-Type': 'application/json' } }
+                        );
                     }
                 }
 
@@ -124,14 +122,25 @@
                 const controller = new AbortController();
                 const timeoutPromise = new Promise<never>((_, reject) => {
                     const id = setTimeout(() => {
-                    controller.abort();
-                    reject(new types.TimeoutError('Request timeout'));
+                        controller.abort();
+                        reject(new types.TimeoutError('Request timeout'));
                     }, requestTimeout);
                     controller.signal.addEventListener('abort', () => clearTimeout(id));
                 });
 
+                // Get middlewares from route metadata
+                const routeDefinition = routeMatch.metadata as types.RouteDefinition | undefined;
+                const middlewares = routeDefinition?.middlewares || [];
+
+                let handlerPromise: Promise<Response>;
+                if (middlewares.length > 0) {
+                    handlerPromise = executeMiddlewares(ctx, middlewares, routeMatch.handler);
+                } else {
+                    handlerPromise = Promise.resolve(routeMatch.handler(ctx));
+                }
+
                 const response = await Promise.race([
-                    routeMatch.handler(ctx),
+                    handlerPromise,
                     timeoutPromise
                 ]) as Response;
 
@@ -167,12 +176,12 @@
                 if (error instanceof types.AppError) {
                     logger?.warn({ error: error.message, requestId, ip }, `App error: ${error.message}`);
                     return new Response(
-                    JSON.stringify({
-                        error	: error.message,
-                        code	: error.code,
-                        requestId
-                    }),
-                    { status: error.statusCode, headers: { 'Content-Type': 'application/json' } }
+                        JSON.stringify({
+                            error	: error.message,
+                            code	: error.code,
+                            requestId
+                        }),
+                        { status: error.statusCode, headers: { 'Content-Type': 'application/json' } }
                     );
                 }
 
@@ -189,6 +198,75 @@
             } finally {
                 activeRequests.delete(requestId);
             }
+        }
+
+        async function executeMiddlewares(
+            ctx: types.AppContext,
+            middlewares: types.AppMiddleware[],
+            handler: types.RouteHandler
+        ): Promise<Response> {
+            let index = 0;
+            let earlyResponse: Response | null = null;
+
+            // Override ctx methods to capture early responses
+            const originalJson = ctx.json.bind(ctx);
+            const originalText = ctx.text.bind(ctx);
+            const originalHtml = ctx.html.bind(ctx);
+            const originalRedirect = ctx.redirect.bind(ctx);
+
+            ctx.json = function(data: unknown, status?: number): Response {
+                const response = originalJson(data, status);
+                earlyResponse = response;
+                return response;
+            };
+
+            ctx.text = function(data: string, status?: number): Response {
+                const response = originalText(data, status);
+                earlyResponse = response;
+                return response;
+            };
+
+            ctx.html = function(data: string, status?: number): Response {
+                const response = originalHtml(data, status);
+                earlyResponse = response;
+                return response;
+            };
+
+            ctx.redirect = function(url: string, status?: number): Response {
+                const response = originalRedirect(url, status);
+                earlyResponse = response;
+                return response;
+            };
+
+            async function next(): Promise<void> {
+                // If middleware sent a response, stop
+                if (earlyResponse) {
+                    return;
+                }
+
+                if (index < middlewares.length) {
+                    const middleware = middlewares[index];
+                    index++;
+                    await middleware(ctx, next);
+                }
+            }
+
+            // Execute all middlewares
+            await next();
+
+            // Restore original methods
+            ctx.json = originalJson;
+            ctx.text = originalText;
+            ctx.html = originalHtml;
+            ctx.redirect = originalRedirect;
+
+            // If middleware sent a response early, return it
+            if (earlyResponse) {
+                return earlyResponse;
+            }
+
+            // Otherwise, call the handler
+            return handler(ctx);
         }
 
         // ════════ Health & Readiness routes ════════
@@ -212,8 +290,8 @@
                 return c.json({
                     ready,
                     checks          : {
-                    database        : dbConnected ? 'connected' : 'not configured',
-                    activeRequests  : activeRequests.size
+                        database        : dbConnected ? 'connected' : 'not configured',
+                        activeRequests  : activeRequests.size
                     },
                     timestamp: new Date().toISOString()
                 }, ready ? 200 : 503);
@@ -222,7 +300,7 @@
 
         // ════════ Register routes ════════
         if (config.routes) {
-                config.routes.forEach(route => {
+            config.routes.forEach(route => {
                 routes.push(route);
                 const methods = Array.isArray(route.method) ? route.method : [route.method];
                 methods.forEach(m => {
@@ -240,7 +318,6 @@
                     const staticServer = new StaticFileServer(staticCfg);
                     const handler = staticServer.handler();
 
-                    // Register catch-all route for this static path
                     const staticRoute: types.RouteDefinition = {
                         method: 'GET',
                         path: staticCfg.path === '/' ? '/*' : `${staticCfg.path}/*`,
@@ -249,24 +326,15 @@
 
                     routes.push(staticRoute);
 
-                    // FIXED: Handle root path differently
                     if (staticCfg.path === '/') {
-                        // For root path, register both exact root and wildcard
                         router.register('GET', '/', handler as types.RouteHandler, staticRoute);
                         router.register('HEAD', '/', handler as types.RouteHandler, staticRoute);
                         router.register('GET', '/*', handler as types.RouteHandler, staticRoute);
                         router.register('HEAD', '/*', handler as types.RouteHandler, staticRoute);
                     } else {
-                        // For prefixed paths like /public, /static
                         router.register('GET', `${staticCfg.path}/*`, handler as types.RouteHandler, staticRoute);
                         router.register('HEAD', `${staticCfg.path}/*`, handler as types.RouteHandler, staticRoute);
                     }
-
-                    // logger?.info({
-                    //     urlPath: staticCfg.path,
-                    //     directory: staticCfg.directory,
-                    //     maxAge: staticCfg.maxAge || 3600
-                    // }, '✔ Static file serving enabled');
                 } catch (error) {
                     logger?.error({
                         error: String(error),
@@ -290,7 +358,6 @@
             bunServer   : null,
 
             async start() {
-                // Initialize databases with our custom DB solution
                 if (config.database) {
                     const dbConfigs = Array.isArray(config.database) ? config.database : [config.database];
                     for (const dbCfg of dbConfigs) {
@@ -298,10 +365,8 @@
 
                         try {
                             if (typeof dbCfg.connection === 'string') {
-                                // Create DB instance with connection string
                                 const db = new sdb.DB(dbCfg.connection);
 
-                                // Define schemas if provided
                                 if (dbCfg.schema && typeof dbCfg.schema === 'object') {
                                     for (const [, tableSchema] of Object.entries(dbCfg.schema)) {
                                         if (tableSchema && typeof tableSchema === 'object') {
@@ -337,13 +402,12 @@
                 instance.bunServer = bunServer;
 
                 const url = `http://${hostname}:${port}`;
-                logger?.info({ url }, 'Server started');
+                logger?.info({ url }, '✔ Server started');
             },
 
             async stop() {
                 logger?.info('Stopping server...');
 
-                // Wait for active requests to complete
                 if (activeRequests.size > 0) {
                     logger?.info({ count: activeRequests.size }, 'Waiting for active requests...');
                     const deadline = Date.now() + gracefulShutdownTimeout;
@@ -367,7 +431,6 @@
                     }
                 }
 
-                // Close database connections
                 for (const [name, db] of dbs.entries()) {
                     try {
                         if (db && typeof db.close === 'function') {
@@ -414,7 +477,6 @@
 
 // ╔════════════════════════════════════════ HELP ════════════════════════════════════════╗
 
-    // Better body parsing with size validation
     async function parseBody(
         request : Request,
         logger  : Logger | null,
@@ -426,7 +488,6 @@
             if (contentType.includes('application/json')) {
 				const text = await request.text();
 
-				// Validate size after reading
 				if (text.length > maxSize) {
 					throw new types.ValidationError('Payload too large');
 				}
@@ -450,15 +511,12 @@
                 if (text.length > maxSize) {
                     throw new types.ValidationError('Payload too large');
                 }
-
                 return Object.fromEntries(new URLSearchParams(text));
             }
 
             if (contentType.includes('multipart/form-data')) {
-                // Note: FormData size can't be validated before parsing
                 return await request.formData();
             }
-
         } catch (e) {
             if (e instanceof types.ValidationError) throw e;
             logger?.error({ error: String(e) }, 'Error parsing request body');
@@ -468,7 +526,6 @@
         return {};
     }
 
-    // Better cookie parsing
     function parseCookies(cookieHeader: string): Map<string, string> {
         const cookies = new Map<string, string>();
 
@@ -478,15 +535,14 @@
         for (const pair of pairs) {
             const [key, ...valueParts] = pair.trim().split('=');
             if (key) {
-            const value = valueParts.join('='); // Handle '=' in value
-            cookies.set(key, value ? decodeURIComponent(value) : '');
+                const value = valueParts.join('=');
+                cookies.set(key, value ? decodeURIComponent(value) : '');
             }
         }
 
         return cookies;
     }
 
-    // Create app context with request ID
     function createAppContext(
         ip          : string,
         request     : Request,
@@ -632,9 +688,7 @@
         return ctx;
     }
 
-    // Better IP extraction with Bun server context
     function getClientIp(request: Request, server?: unknown): string {
-        // Check proxy headers first (for production behind reverse proxy)
         const forwarded = request.headers.get('x-forwarded-for');
         if (forwarded) {
             const ips = forwarded.split(',').map(ip => ip.trim());
@@ -644,7 +698,6 @@
         const realIp = request.headers.get('x-real-ip');
         if (realIp) return realIp;
 
-        // Get IP from Bun server context (works for localhost)
         if (server) {
             try {
                 const serverWithRequestIP = server as { requestIP?: (req: Request) => { address?: string } | null };
@@ -660,7 +713,6 @@
         return 'unknown';
     }
 
-    // CORS helper with proper configuration
     function handleCors(request: Request, config: types.ServerConfig): Headers {
         const headers = new Headers();
 
@@ -710,19 +762,10 @@
 
 // ╔════════════════════════════════════════ ════ ════════════════════════════════════════╗
 
-    // Export all types
     export * from './types.d';
-
-    // Export Logger
     export { Logger };
-
-    // Export SecurityManager for advanced use cases
     export { SecurityManager };
-
-    // Export Router for advanced use cases
     export { Router };
-
-    // Export DB and database helpers
     export {
         DB,
         table,
@@ -738,8 +781,6 @@
         defaultValue,
         references
     } from '@je-es/sdb';
-
-    // Export DB types
     export type {
         ColumnType,
         SqlValue,
@@ -748,14 +789,8 @@
         WhereCondition,
         QueryBuilder
     } from '@je-es/sdb';
-
-    // Export StaticFileServer
     export { StaticFileServer, createStatic } from './mod/static';
-
-    // Export Static types
     export type { StaticConfig } from './mod/static';
-
-    // Default export
     export default server;
 
 // ╚══════════════════════════════════════════════════════════════════════════════════════╝

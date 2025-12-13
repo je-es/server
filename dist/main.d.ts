@@ -2,6 +2,111 @@ import { DB } from '@je-es/sdb';
 export { ColumnDefinition, ColumnType, DB, QueryBuilder, SqlValue, TableSchema, WhereCondition, blob, column, defaultValue, integer, notNull, numeric, primaryKey, real, references, table, text, unique } from '@je-es/sdb';
 export { Logger } from '@je-es/slog';
 
+declare class I18nManager {
+    private translations;
+    private currentLanguage;
+    private defaultLanguage;
+    private supportedLanguages;
+    private cachePath;
+    constructor(config?: I18nConfig);
+    /**
+     * Load translations for a specific language
+     * @param lang Language code (e.g., 'en', 'ar', 'fr')
+     * @param translations Translation object
+     */
+    loadLanguage(lang: string, translations: Record<string, string>): void;
+    /**
+     * Load all translations from static files
+     * @param translations Object with language codes as keys and translation objects as values
+     */
+    loadTranslations(translations: Record<string, Record<string, string>>): void;
+    /**
+     * Set the current language
+     * @param lang Language code
+     */
+    setLanguage(lang: string): void;
+    /**
+     * Get the current language
+     */
+    getLanguage(): string;
+    /**
+     * Get all supported languages
+     */
+    getSupportedLanguages(): string[];
+    /**
+     * Translate a key with smart parameter replacement
+     * Supports nested translation keys as parameter values
+     *
+     * @example
+     * // Simple translation
+     * t('app.name') // => "JE-ES Server"
+     *
+     * @example
+     * // With parameters
+     * t('validation.invalid', { field: 'email' })
+     * // => "Invalid value for email"
+     *
+     * @example
+     * // With nested translation keys as parameters
+     * t('message.validation', { error: 'validation.required' })
+     * // => "Message: This field is required"
+     *
+     * @param key Translation key (dot-notation)
+     * @param params Optional parameters for replacement
+     * @returns Translated string with replaced parameters
+     */
+    t(key: string, params?: Record<string, string>): string;
+    /**
+     * Translate with a specific language (overrides current language temporarily)
+     *
+     * @param key Translation key
+     * @param lang Language code
+     * @param params Optional parameters
+     * @returns Translated string
+     */
+    tLang(key: string, lang: string, params?: Record<string, string>): string;
+    /**
+     * Get all translations for current language
+     */
+    getTranslations(): Record<string, string>;
+    /**
+     * Check if a translation key exists
+     * @param key Translation key
+     * @returns true if key exists in current or default language
+     */
+    hasKey(key: string): boolean;
+}
+/**
+ * Initialize the i18n manager
+ * @param config I18n configuration
+ * @returns I18nManager instance
+ */
+declare function initI18n(config?: I18nConfig): I18nManager;
+/**
+ * Get the global i18n instance
+ */
+declare function getI18n(): I18nManager;
+/**
+ * Global translation function
+ * @param key Translation key
+ * @param params Optional parameters
+ * @returns Translated string
+ */
+declare function t(key: string, params?: Record<string, string>): string;
+/**
+ * Set the current language globally
+ * @param lang Language code
+ */
+declare function setLanguage(lang: string): void;
+/**
+ * Get the current language
+ */
+declare function getCurrentLanguage(): string;
+/**
+ * Get all supported languages
+ */
+declare function getSupportedLanguages(): string[];
+
 // src/types.d.ts
 //
 // Developed with ❤️ by Maysara.
@@ -29,6 +134,8 @@ export { Logger } from '@je-es/slog';
         headers         : Headers;
         db              : DB | undefined;
         logger          : Logger | null;
+        i18n            : I18nManager | null;
+        lang?           : string;
         user?           : unknown;
         requestId       : string;
 
@@ -159,6 +266,14 @@ export { Logger } from '@je-es/slog';
         pretty?: boolean;
     }
 
+    interface I18nConfig {
+        defaultLanguage?    : string;
+        supportedLanguages? : string[];
+        staticPath?         : string;  // Path to static i18n files
+    }
+
+    type TranslationSet = Record<string, Record<string, string>>;
+
     interface ServerConfig {
         port?           : number | string;
         hostname?       : string;
@@ -173,6 +288,9 @@ export { Logger } from '@je-es/slog';
         compression?    : boolean | { threshold?: number };
 
         logging?        : boolean | LoggingConfig;
+
+        // Internationalization (i18n)
+        i18n?           : boolean | I18nConfig;
 
         // Static file serving
         static?         : StaticConfig$1 | StaticConfig$1[];
@@ -352,4 +470,4 @@ declare function createStatic(config: StaticConfig): StaticFileServer;
 
 declare function server(config?: ServerConfig): ServerInstance;
 
-export { type AppContext, AppError, type AppMiddleware, type AuthConfig, type CookieOptions, type CorsConfig, type CsrfConfig, type DatabaseConfig, DatabaseError, type HelmetConfig, type HttpMethod, type LogLevel, type LoggingConfig, type RateLimitConfig, RateLimitError, type RouteDefinition, type RouteHandler$1 as RouteHandler, Router, type SecurityConfig, SecurityManager, type ServerConfig, type ServerInstance, type StaticConfig, StaticFileServer, TimeoutError, ValidationError, type ValidationSchema, createStatic, server as default, server };
+export { type AppContext, AppError, type AppMiddleware, type AuthConfig, type CookieOptions, type CorsConfig, type CsrfConfig, type DatabaseConfig, DatabaseError, type HelmetConfig, type HttpMethod, type I18nConfig, I18nManager, type LogLevel, type LoggingConfig, type RateLimitConfig, RateLimitError, type RouteDefinition, type RouteHandler$1 as RouteHandler, Router, type SecurityConfig, SecurityManager, type ServerConfig, type ServerInstance, type StaticConfig, StaticFileServer, TimeoutError, type TranslationSet, ValidationError, type ValidationSchema, createStatic, server as default, getCurrentLanguage, getI18n, getSupportedLanguages, initI18n, server, setLanguage, t };

@@ -8,7 +8,7 @@
 </div>
 
 <div align="center">
-    <img src="https://img.shields.io/badge/v-0.1.5-black"/>
+    <img src="https://img.shields.io/badge/v-0.1.6-black"/>
     <img src="https://img.shields.io/badge/🔥-@je--es-black"/>
     <br>
     <img src="https://github.com/je-es/server/actions/workflows/ci.yml/badge.svg" alt="CI" />
@@ -192,6 +192,45 @@
             }
         });
         ```
+
+    - ### Internationalization (i18n)
+
+        ```typescript
+        const app = server({
+            port    : 3000,
+            i18n    : {
+                defaultLanguage     : 'en',
+                supportedLanguages  : ['en', 'ar', 'fr'],
+                staticPath          : 'static/i18n'
+            },
+            routes: [
+                {
+                    method  : 'GET',
+                    path    : '/message',
+                    handler : (c) => {
+                        // Language auto-detected from ?lang=ar, Accept-Language header, or defaults to 'en'
+                        const greeting = c.i18n?.t('message.greeting', { name: 'John' });
+                        return c.json({ greeting });
+                    }
+                }
+            ]
+        });
+        ```
+
+        **Translation files** (`static/i18n/*.json`):
+        ```json
+        // en.json
+        { "message.greeting": "Hello {name}" }
+
+        // ar.json
+        { "message.greeting": "مرحبا {name}" }
+        ```
+
+        **Key Features:**
+        - Auto language detection from query params, headers, or defaults
+        - Smart parameter replacement with nested translation key support
+        - All supported languages loaded at server startup
+        - Works with any number of languages dynamically
 
     <br>
 

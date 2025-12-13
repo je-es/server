@@ -7,6 +7,7 @@
 // ╔════════════════════════════════════════ PACK ════════════════════════════════════════╗
 
     import { DB } from '@je-es/sdb';
+    import type { I18nManager } from './mod/i18n';
 
 // ╚══════════════════════════════════════════════════════════════════════════════════════╝
 
@@ -29,6 +30,8 @@
         headers         : Headers;
         db              : DB | undefined;
         logger          : Logger | null;
+        i18n            : I18nManager | null;
+        lang?           : string;
         user?           : unknown;
         requestId       : string;
 
@@ -159,6 +162,14 @@
         pretty?: boolean;
     }
 
+    export interface I18nConfig {
+        defaultLanguage?    : string;
+        supportedLanguages? : string[];
+        staticPath?         : string;  // Path to static i18n files
+    }
+
+    export type TranslationSet = Record<string, Record<string, string>>;
+
     export interface ServerConfig {
         port?           : number | string;
         hostname?       : string;
@@ -173,6 +184,9 @@
         compression?    : boolean | { threshold?: number };
 
         logging?        : boolean | LoggingConfig;
+
+        // Internationalization (i18n)
+        i18n?           : boolean | I18nConfig;
 
         // Static file serving
         static?         : StaticConfig | StaticConfig[];

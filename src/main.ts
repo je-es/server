@@ -12,6 +12,7 @@
     import { Logger }       	from '@je-es/slog';
     import * as types           from './types.d';
     import { StaticFileServer } from './mod/static';
+    import { initI18n, I18nManager } from './mod/i18n';
 
 // ╚══════════════════════════════════════════════════════════════════════════════════════╝
 
@@ -39,6 +40,17 @@
 
 		const logCfg                    = typeof config.logging === 'object' ? config.logging : {};
 		const logger                    = config.logging ? new Logger(logCfg.level || 'info', logCfg.pretty) : null;
+
+		// ════════ i18n Configuration ════════
+		let i18n: I18nManager | null = null;
+		if (config.i18n) {
+			const i18nCfg = typeof config.i18n === 'object' ? config.i18n : {};
+			i18n = initI18n({
+				defaultLanguage: i18nCfg.defaultLanguage || 'en',
+				supportedLanguages: i18nCfg.supportedLanguages || ['en', 'ar', 'fr'],
+				staticPath: i18nCfg.staticPath || 'static/i18n'
+			});
+		}
 
 		const dbs                       = new Map<string, sdb.DB>();
 		const routes: types.RouteDefinition[] = [];
@@ -106,15 +118,25 @@
                 // Get database
                 const defaultDb = dbs.get('default');
 
+                // Detect language from request (query param, header, or cookie)
+                const query = Object.fromEntries(new URL(request.url).searchParams);
+                let requestLang = (query.lang as string) || request.headers.get('Accept-Language')?.split(',')[0]?.split('-')[0] || 'en';
+                if (i18n && !i18n.getSupportedLanguages().includes(requestLang)) {
+                    requestLang = i18n.getLanguage();
+                }
+                if (i18n) {
+                    i18n.setLanguage(requestLang);
+                }
+
                 // Match route
                 const routeMatch = router.match(method, path);
                 if (!routeMatch) {
-                    const ctx = createAppContext(ip, request, {}, defaultDb, logger, requestId);
+                    const ctx = createAppContext(ip, request, {}, defaultDb, logger, requestId, i18n, requestLang);
                     logger?.warn({ requestId, method, path, ip }, 'Route not found');
                     return ctx.json({ error: 'Not Found', path }, 404);
                 }
 
-                const ctx = createAppContext(ip, request, routeMatch.params || {}, defaultDb, logger, requestId);
+                const ctx = createAppContext(ip, request, routeMatch.params || {}, defaultDb, logger, requestId, i18n, requestLang);
                 ctx.body = body;
                 ctx.request = request;
 
@@ -358,6 +380,29 @@
             bunServer   : null,
 
             async start() {
+                // Load i18n translations from static files
+                if (i18n && config.i18n) {
+                    const i18nCfg = typeof config.i18n === 'object' ? config.i18n : {};
+                    const staticPath = i18nCfg.staticPath || 'static/i18n';
+                    const supportedLangs = i18nCfg.supportedLanguages || ['en', 'ar', 'fr'];
+
+                    try {
+                        for (const lang of supportedLangs) {
+                            const filePath = `${staticPath}/${lang}.json`;
+                            const file = Bun.file(filePath);
+
+                            if (await file.exists()) {
+                                const data = await file.json() as Record<string, string>;
+                                i18n.loadLanguage(lang, data);
+                            }
+                        }
+
+                        logger?.info({ languages: i18n.getSupportedLanguages() }, 'i18n translations loaded');
+                    } catch (error) {
+                        logger?.warn({ error: String(error) }, 'Failed to load i18n translations');
+                    }
+                }
+
                 if (config.database) {
                     const dbConfigs = Array.isArray(config.database) ? config.database : [config.database];
                     for (const dbCfg of dbConfigs) {
@@ -549,7 +594,9 @@
         params      : Record<string, string>,
         db          : sdb.DB | undefined,
         logger      : Logger | null,
-        requestId   : string
+        requestId   : string,
+        i18nMgr     : I18nManager | null = null,
+        lang        : string = 'en'
     ): types.AppContext {
         const url           = new URL(request.url);
         const query         = Object.fromEntries(url.searchParams);
@@ -566,6 +613,8 @@
             headers,
             db,
             logger,
+            i18n: i18nMgr,
+            lang,
             requestId,
             get statusCode() { return statusCode; },
             set statusCode(code: number) { statusCode = code; },
@@ -791,6 +840,16 @@
     } from '@je-es/sdb';
     export { StaticFileServer, createStatic } from './mod/static';
     export type { StaticConfig } from './mod/static';
+    export {
+        initI18n,
+        getI18n,
+        t,
+        setLanguage,
+        getCurrentLanguage,
+        getSupportedLanguages,
+        I18nManager
+    } from './mod/i18n';
+    export type { I18nConfig, TranslationSet } from './mod/i18n';
     export default server;
 
 // ╚══════════════════════════════════════════════════════════════════════════════════════╝

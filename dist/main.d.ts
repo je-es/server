@@ -53,9 +53,11 @@ declare class I18nManager {
      *
      * @param key Translation key (dot-notation)
      * @param params Optional parameters for replacement
+     * @param defaultValue Optional default value
      * @returns Translated string with replaced parameters
      */
-    t(key: string, params?: Record<string, string>): string;
+    t(key: string, params?: Record<string, string>, defaultValue?: string): string;
+    private getTranslation;
     /**
      * Translate with a specific language (overrides current language temporarily)
      *
@@ -90,9 +92,10 @@ declare function getI18n(): I18nManager;
  * Global translation function
  * @param key Translation key
  * @param params Optional parameters
+ * @param defaultValue Optional default value
  * @returns Translated string
  */
-declare function t(key: string, params?: Record<string, string>): string;
+declare function t(key: string, params?: Record<string, string>, defaultValue?: string): string;
 /**
  * Set the current language globally
  * @param lang Language code

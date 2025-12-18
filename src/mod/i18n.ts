@@ -92,33 +92,30 @@
             /**
              * Translate a key with smart parameter replacement
              * Supports nested translation keys as parameter values
-             * 
+             *
              * @example
              * // Simple translation
              * t('app.name') // => "JE-ES Server"
-             * 
+             *
              * @example
              * // With parameters
              * t('validation.invalid', { field: 'email' })
              * // => "Invalid value for email"
-             * 
+             *
              * @example
              * // With nested translation keys as parameters
              * t('message.validation', { error: 'validation.required' })
              * // => "Message: This field is required"
-             * 
+             *
              * @param key Translation key (dot-notation)
              * @param params Optional parameters for replacement
+             * @param defaultValue Optional default value
              * @returns Translated string with replaced parameters
              */
-            public t(key: string, params?: Record<string, string>): string {
+            public t(key: string, params?: Record<string, string>, defaultValue?: string): string {
                 const lang = this.currentLanguage;
-                
-                // Try current language, then default language, then return key itself
-                let translation = 
-                    this.translations[lang]?.[key] || 
-                    this.translations[this.defaultLanguage]?.[key] || 
-                    key;
+
+                let translation = this.getTranslation(key, defaultValue);
 
                 // Replace parameters if provided
                 if (params) {
@@ -127,7 +124,7 @@
                         const paramValue = this.translations[lang]?.[value] ||
                             this.translations[this.defaultLanguage]?.[value] ||
                             value;
-                        
+
                         translation = translation.replace(
                             new RegExp(`\\{${param}\\}`, 'g'),
                             paramValue
@@ -138,9 +135,22 @@
                 return translation;
             }
 
+            private getTranslation(key: string, defaultValue?: string): string {
+                const lang = this.currentLanguage;
+
+                // warn if not found
+                if (!this.translations[lang]?.[key]) {
+                    console.warn(`Translation key not found: ${key}`);
+
+                    return defaultValue || key;
+                }
+
+                return this.translations[lang]?.[key] || this.translations[this.defaultLanguage]?.[key];
+            }
+
             /**
              * Translate with a specific language (overrides current language temporarily)
-             * 
+             *
              * @param key Translation key
              * @param lang Language code
              * @param params Optional parameters
@@ -177,6 +187,12 @@
 
     }
 
+// ╚══════════════════════════════════════════════════════════════════════════════════════╝
+
+
+
+// ╔════════════════════════════════════════ GLOB ════════════════════════════════════════╗
+
     // Singleton instance
     let i18nInstance: I18nManager | null = null;
 
@@ -206,10 +222,11 @@
      * Global translation function
      * @param key Translation key
      * @param params Optional parameters
+     * @param defaultValue Optional default value
      * @returns Translated string
      */
-    export function t(key: string, params?: Record<string, string>): string {
-        return getI18n().t(key, params);
+    export function t(key: string, params?: Record<string, string>, defaultValue?: string): string {
+        return getI18n().t(key, params, defaultValue);
     }
 
     /**

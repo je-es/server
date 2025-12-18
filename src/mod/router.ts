@@ -4,33 +4,37 @@
 
 
 
-// ╔════════════════════════════════════════ TYPE ════════════════════════════════════════╗
+// ╔════════════════════════════════════════ PACK ════════════════════════════════════════╗
 
-    // Import AppContext from types to maintain type consistency
     import type { AppContext } from '../types.d';
 
-    export type RouteHandler = (ctx: AppContext) => Response | Promise<Response>;
+// ╚══════════════════════════════════════════════════════════════════════════════════════╝
+
+
+
+// ╔════════════════════════════════════════ TYPE ════════════════════════════════════════╗
+
+    export type RouteHandler        = (ctx: AppContext) => Response | Promise<Response>;
+    export type RegexRoutes         = RegexRoute[];
 
     export interface RegexRoute {
-        pattern: RegExp;
-        method: string;
-        handler: RouteHandler;
-        key: string;
-        metadata?: unknown;
+        pattern                     : RegExp;
+        method                      : string;
+        handler                     : RouteHandler;
+        key                         : string;
+        metadata?                   : unknown;
     }
 
-    export type RegexRoutes = RegexRoute[];
-
     export interface RouteMatch {
-        handler: RouteHandler;
-        params: Record<string, string>;
-        metadata?: unknown;
+        handler                     : RouteHandler;
+        params                      : Record<string, string>;
+        metadata?                   : unknown;
     }
 
     export interface RouteInfo {
-        method: string;
-        path: string;
-        handler: RouteHandler;
+        method                      : string;
+        path                        : string;
+        handler                     : RouteHandler;
     }
 
 // ╚══════════════════════════════════════════════════════════════════════════════════════╝

@@ -15,28 +15,28 @@
 // ╔════════════════════════════════════════ TYPE ════════════════════════════════════════╗
 
     interface RateLimitRecord {
-        count: number;
-        reset: number;
+        count               : number;
+        reset               : number;
     }
 
     interface CsrfTokenData {
-        sessionId: string;
-        expires: number;
+        sessionId           : string;
+        expires             : number;
     }
 
     interface RequestLogEntry {
-        timestamp: string;
-        method: string;
-        path: string;
-        ip: string;
-        status: number;
-        duration: number;
+        timestamp           : string;
+        method              : string;
+        path                : string;
+        ip                  : string;
+        status              : number;
+        duration            : number;
     }
 
     interface SecurityStats {
-        rateLimitEntries: number;
-        csrfTokens: number;
-        requestLogs: number;
+        rateLimitEntries    : number;
+        csrfTokens          : number;
+        requestLogs         : number;
     }
 
 // ╚══════════════════════════════════════════════════════════════════════════════════════╝
@@ -49,9 +49,9 @@
 
         // ┌──────────────────────────────── INIT ──────────────────────────────┐
 
-            private rateLimitStore = new Map<string, RateLimitRecord>();
-            private csrfTokens = new Map<string, CsrfTokenData>();
-            private requestLog = new Map<string, RequestLogEntry>();
+            private rateLimitStore  = new Map<string, RateLimitRecord>();
+            private csrfTokens      = new Map<string, CsrfTokenData>();
+            private requestLog      = new Map<string, RequestLogEntry>();
 
             private readonly MAX_REQUEST_LOG_SIZE = 1000;
 

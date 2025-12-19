@@ -302,6 +302,8 @@ declare function getSupportedLanguages(): string[];
         middlewares?    : AppMiddleware[];
 
         errorHandler?   : (error: Error, context: AppContext) => void | Promise<void>;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        onStartup?      : (app: any) => void | Promise<void>;
         onShutdown?     : () => void | Promise<void>;
 
         apiPrefix?      : string;

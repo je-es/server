@@ -448,6 +448,14 @@
 
                 const url = `http://${hostname}:${port}`;
                 logger?.info({ url }, '✔ Server started');
+
+                if (config.onStartup) {
+                    try {
+                        await config.onStartup(instance);
+                    } catch (e) {
+                        logger?.error({ error: String(e) }, 'Error in startup handler');
+                    }
+                }
             },
 
             async stop() {

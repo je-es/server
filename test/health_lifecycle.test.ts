@@ -185,12 +185,72 @@
 		});
 	});
 
+	describe('Server Lifecycle - Startup', () => {
+		test('calls onStartup handler', async () => {
+			let startupCalled = false;
+
+			const app = server({
+				port: 3254,
+				logging: false,
+				onStartup: async () => {
+					startupCalled = true;
+				}
+			});
+
+			await app.start();
+			await app.stop();
+
+			expect(startupCalled).toBe(true);
+		});
+
+		test('passes app instance to onStartup handler', async () => {
+			let receivedApp: any = null;
+
+			const app = server({
+				port: 3254,
+				logging: false,
+				onStartup: async (appInstance: any) => {
+					receivedApp = appInstance;
+				}
+			});
+
+			await app.start();
+
+			expect(receivedApp).toBeTruthy();
+			expect(receivedApp.logger).toBeDefined();
+			expect(receivedApp.db).toBeDefined();
+
+			await app.stop();
+		});
+
+		test('handles error in startup handler', async () => {
+			const app = server({
+				port: 3254,
+				logging: false,
+				onStartup: async () => {
+					throw new Error('Startup error');
+				}
+			});
+
+			let error: any = null;
+			try {
+				await app.start();
+			} catch (e) {
+				error = e;
+			}
+
+			// Should not throw, should handle error gracefully
+			expect(error).toBe(null);
+			await app.stop();
+		});
+	});
+
 	describe('Server Lifecycle - Shutdown', () => {
 		test('calls onShutdown handler', async () => {
 			let shutdownCalled = false;
 
 			const app = server({
-				port: 3254,
+				port: 3255,
 				logging: false,
 				onShutdown: async () => {
 					shutdownCalled = true;
@@ -205,7 +265,7 @@
 
 		test('handles error in shutdown handler', async () => {
 			const app = server({
-				port: 3255,
+				port: 3256,
 				logging: false,
 				onShutdown: async () => {
 					throw new Error('Shutdown error');
@@ -228,7 +288,7 @@
 	describe('Server Lifecycle - API Configuration', () => {
 		test('accepts apiPrefix and apiVersion', async () => {
 			const app = server({
-				port: 3256,
+				port: 3257,
 				apiPrefix: '/v2',
 				apiVersion: 'v2',
 				logging: false

@@ -8,7 +8,7 @@
 </div>
 
 <div align="center">
-    <img src="https://img.shields.io/badge/v-0.1.6-black"/>
+    <img src="https://img.shields.io/badge/v-0.1.7-black"/>
     <img src="https://img.shields.io/badge/🔥-@je--es-black"/>
     <br>
     <img src="https://github.com/je-es/server/actions/workflows/ci.yml/badge.svg" alt="CI" />
@@ -282,6 +282,7 @@
             },
 
             // Lifecycle
+            onStartup               : async (app) => { console.log('Starting...'); },
             onShutdown              : async () => { console.log('Shutting down...'); }
         };
         ```
@@ -520,13 +521,18 @@
 
         <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
 
-    - ### Graceful Shutdown
+    - ### Startup & Shutdown Hooks
 
         ```typescript
         const app = server({
             gracefulShutdownTimeout: 10000,
+            onStartup: async (app) => {
+                // Initialize database, admin user, etc.
+                console.log('✓ Server initialized');
+            },
             onShutdown: async () => {
                 // Cleanup
+                console.log('Server shutting down gracefully...');
             }
         });
 

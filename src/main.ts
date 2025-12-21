@@ -456,6 +456,14 @@
                         logger?.error({ error: String(e) }, 'Error in startup handler');
                     }
                 }
+
+                if (config.onReady) {
+                    try {
+                        await config.onReady(instance, dbs);
+                    } catch (e) {
+                        logger?.error({ error: String(e) }, 'Error in ready handler');
+                    }
+                }
             },
 
             async stop() {

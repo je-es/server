@@ -8,7 +8,7 @@
 </div>
 
 <div align="center">
-    <img src="https://img.shields.io/badge/v-0.1.7-black"/>
+    <img src="https://img.shields.io/badge/v-0.1.8-black"/>
     <img src="https://img.shields.io/badge/🔥-@je--es-black"/>
     <br>
     <img src="https://github.com/je-es/server/actions/workflows/ci.yml/badge.svg" alt="CI" />
@@ -283,6 +283,7 @@
 
             // Lifecycle
             onStartup               : async (app) => { console.log('Starting...'); },
+            onReady                 : async (app, db) => { console.log('Server ready with DB'); },
             onShutdown              : async () => { console.log('Shutting down...'); }
         };
         ```
@@ -539,6 +540,37 @@
         process.on('SIGTERM', async () => {
             await app.stop();
             process.exit(0);
+        });
+        ```
+
+        <div align="center"> <img src="./assets/img/line.png" alt="line" style="display: block; margin-top:20px;margin-bottom:20px;width:500px;"/> <br> </div>
+
+    - ### onReady Hook (Database Initialization)
+
+        Use `onReady` to perform operations with the fully initialized server and databases. Unlike `onStartup`, `onReady` provides access to database instances.
+
+        ```typescript
+        const app = server({
+            database: {
+                connection: './app.db',
+                schema: { users }
+            },
+            onReady: async (app, db) => {
+                // Databases are now fully initialized
+                const defaultDb = db.get('default');
+                
+                // Seed initial data
+                defaultDb?.insert('users', { name: 'Admin', email: 'admin@example.com' });
+                
+                // Add routes dynamically
+                app.addRoute({
+                    method: 'GET',
+                    path: '/api/health',
+                    handler: (c) => c.json({ status: 'ok' })
+                });
+                
+                console.log('✓ Database initialization complete');
+            }
         });
         ```
 

@@ -304,6 +304,7 @@ declare function getSupportedLanguages(): string[];
         errorHandler?   : (error: Error, context: AppContext) => void | Promise<void>;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         onStartup?      : (app: any) => void | Promise<void>;
+        onReady?        : (app: ServerInstance, db: Map<string, DB>) => void | Promise<void>;
         onShutdown?     : () => void | Promise<void>;
 
         apiPrefix?      : string;

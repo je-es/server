@@ -9,7 +9,7 @@
 
 	import { describe, test, expect, beforeAll, afterAll } from 'bun:test';
 	import { server, type ServerInstance, type AppContext } from '../src/main';
-	import { Router } from '../src/mod/router';
+	import { Router } from '../src/mod/core/router';
 
 // ╚══════════════════════════════════════════════════════════════════════════════════════╝
 

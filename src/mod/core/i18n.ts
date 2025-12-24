@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // src/mod/i18n.ts
 //
 // Developed with ❤️ by Maysara.
@@ -6,7 +7,7 @@
 
 // ╔════════════════════════════════════════ PACK ════════════════════════════════════════╗
 
-    import type { I18nConfig, TranslationSet } from '../types.d';
+    import type { I18nConfig, TranslationSet } from '../../types';
 
 // ╚══════════════════════════════════════════════════════════════════════════════════════╝
 
@@ -43,21 +44,50 @@
             /**
              * Load translations for a specific language
              * @param lang Language code (e.g., 'en', 'ar', 'fr')
-             * @param translations Translation object
+             * @param translations Translation object (can be nested)
              */
-            public loadLanguage(lang: string, translations: Record<string, string>): void {
+            public loadLanguage(lang: string, translations: Record<string, any>): void {
                 if (!this.translations[lang]) {
                     this.translations[lang] = {};
                 }
-                this.translations[lang] = { ...this.translations[lang], ...translations };
+                // Flatten the nested translations
+                const flattened = this.flattenObject(translations);
+                this.translations[lang] = { ...this.translations[lang], ...flattened };
                 this.supportedLanguages.add(lang);
+            }
+
+            /**
+             * Flatten nested object into dot notation
+             * @param obj Nested object
+             * @param prefix Current prefix
+             * @returns Flattened object with dot notation keys
+             */
+            private flattenObject(obj: Record<string, any>, prefix: string = ''): Record<string, string> {
+                const flattened: Record<string, string> = {};
+
+                for (const key in obj) {
+                    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                        const value = obj[key];
+                        const newKey = prefix ? `${prefix}.${key}` : key;
+
+                        if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+                            // Recursively flatten nested objects
+                            Object.assign(flattened, this.flattenObject(value, newKey));
+                        } else {
+                            // Store the value
+                            flattened[newKey] = String(value);
+                        }
+                    }
+                }
+
+                return flattened;
             }
 
             /**
              * Load all translations from static files
              * @param translations Object with language codes as keys and translation objects as values
              */
-            public loadTranslations(translations: Record<string, Record<string, string>>): void {
+            public loadTranslations(translations: Record<string, Record<string, any>>): void {
                 Object.entries(translations).forEach(([lang, trans]) => {
                     this.loadLanguage(lang, trans);
                 });
@@ -95,19 +125,19 @@
              *
              * @example
              * // Simple translation
-             * t('app.name') // => "JE-ES Server"
+             * t('button.login') // => "Login" or "دخـول"
              *
              * @example
              * // With parameters
-             * t('validation.invalid', { field: 'email' })
-             * // => "Invalid value for email"
+             * t('nav.credits', { count: '100' })
+             * // => "Available Credits: 100"
              *
              * @example
              * // With nested translation keys as parameters
-             * t('message.validation', { error: 'validation.required' })
-             * // => "Message: This field is required"
+             * t('language.switching_to', { language: 'button.login' })
+             * // => "Switching to Login..."
              *
-             * @param key Translation key (dot-notation)
+             * @param key Translation key (dot-notation for nested keys)
              * @param params Optional parameters for replacement
              * @param defaultValue Optional default value
              * @returns Translated string with replaced parameters
@@ -220,7 +250,7 @@
 
     /**
      * Global translation function
-     * @param key Translation key
+     * @param key Translation key (supports dot notation for nested keys)
      * @param params Optional parameters
      * @param defaultValue Optional default value
      * @returns Translated string

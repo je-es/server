@@ -7,12 +7,12 @@
 // ╔════════════════════════════════════════ PACK ════════════════════════════════════════╗
 
     import * as sdb             from '@je-es/sdb';
-    import { Router }           from './mod/router';
-    import { SecurityManager }  from './mod/security';
+    import { Router }           from './mod/core/router';
+    import { SecurityManager }  from './mod/core/security';
     import { Logger }       	from '@je-es/slog';
     import * as types           from './types.d';
-    import { StaticFileServer } from './mod/static';
-    import { initI18n, I18nManager } from './mod/i18n';
+    import { StaticFileServer } from './mod/core/static';
+    import { initI18n, I18nManager } from './mod/core/i18n';
 
 // ╚══════════════════════════════════════════════════════════════════════════════════════╝
 
@@ -48,7 +48,7 @@
 			i18n = initI18n({
 				defaultLanguage: i18nCfg.defaultLanguage || 'en',
 				supportedLanguages: i18nCfg.supportedLanguages || ['en', 'ar', 'fr'],
-				staticPath: i18nCfg.staticPath || 'static/i18n'
+				staticPath: i18nCfg.staticPath || './src/frontend/static/i18n'
 			});
 		}
 
@@ -383,7 +383,7 @@
                 // Load i18n translations from static files
                 if (i18n && config.i18n) {
                     const i18nCfg = typeof config.i18n === 'object' ? config.i18n : {};
-                    const staticPath = i18nCfg.staticPath || 'static/i18n';
+                    const staticPath = i18nCfg.staticPath || './src/frontend/static/i18n';
                     const supportedLangs = i18nCfg.supportedLanguages || ['en', 'ar', 'fr'];
 
                     try {
@@ -635,6 +635,7 @@
             get statusCode() { return statusCode; },
             set statusCode(code: number) { statusCode = code; },
             body: null,
+            state: {},
 
             json(data: unknown, status?: number): Response {
                 return new Response(JSON.stringify(data), {
@@ -844,7 +845,8 @@
         notNull,
         unique,
         defaultValue,
-        references
+        references,
+        index
     } from '@je-es/sdb';
     export type {
         ColumnType,
@@ -854,8 +856,8 @@
         WhereCondition,
         QueryBuilder
     } from '@je-es/sdb';
-    export { StaticFileServer, createStatic } from './mod/static';
-    export type { StaticConfig } from './mod/static';
+    export { StaticFileServer, createStatic } from './mod/core/static';
+    export type { StaticConfig } from './mod/core/static';
     export {
         initI18n,
         getI18n,
@@ -864,8 +866,9 @@
         getCurrentLanguage,
         getSupportedLanguages,
         I18nManager
-    } from './mod/i18n';
-    export type { I18nConfig, TranslationSet } from './mod/i18n';
+    } from './mod/core/i18n';
+    export type { I18nConfig, TranslationSet } from './mod/core/i18n';
+
     export default server;
 
 // ╚══════════════════════════════════════════════════════════════════════════════════════╝

@@ -9,7 +9,7 @@
 
     import { join, extname, resolve, relative } from 'path';
     import { existsSync, statSync } from 'fs';
-    import type { AppContext } from '../types.d';
+    import type { AppContext } from '../../types';
 
 // ╚══════════════════════════════════════════════════════════════════════════════════════╝
 

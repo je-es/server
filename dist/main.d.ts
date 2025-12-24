@@ -1,5 +1,5 @@
 import { DB } from '@je-es/sdb';
-export { ColumnDefinition, ColumnType, DB, QueryBuilder, SqlValue, TableSchema, WhereCondition, blob, column, defaultValue, integer, notNull, numeric, primaryKey, real, references, table, text, unique } from '@je-es/sdb';
+export { ColumnDefinition, ColumnType, DB, QueryBuilder, SqlValue, TableSchema, WhereCondition, blob, column, defaultValue, index, integer, notNull, numeric, primaryKey, real, references, table, text, unique } from '@je-es/sdb';
 export { Logger } from '@je-es/slog';
 
 declare class I18nManager {
@@ -12,14 +12,21 @@ declare class I18nManager {
     /**
      * Load translations for a specific language
      * @param lang Language code (e.g., 'en', 'ar', 'fr')
-     * @param translations Translation object
+     * @param translations Translation object (can be nested)
      */
-    loadLanguage(lang: string, translations: Record<string, string>): void;
+    loadLanguage(lang: string, translations: Record<string, any>): void;
+    /**
+     * Flatten nested object into dot notation
+     * @param obj Nested object
+     * @param prefix Current prefix
+     * @returns Flattened object with dot notation keys
+     */
+    private flattenObject;
     /**
      * Load all translations from static files
      * @param translations Object with language codes as keys and translation objects as values
      */
-    loadTranslations(translations: Record<string, Record<string, string>>): void;
+    loadTranslations(translations: Record<string, Record<string, any>>): void;
     /**
      * Set the current language
      * @param lang Language code
@@ -39,19 +46,19 @@ declare class I18nManager {
      *
      * @example
      * // Simple translation
-     * t('app.name') // => "JE-ES Server"
+     * t('button.login') // => "Login" or "دخـول"
      *
      * @example
      * // With parameters
-     * t('validation.invalid', { field: 'email' })
-     * // => "Invalid value for email"
+     * t('nav.credits', { count: '100' })
+     * // => "Available Credits: 100"
      *
      * @example
      * // With nested translation keys as parameters
-     * t('message.validation', { error: 'validation.required' })
-     * // => "Message: This field is required"
+     * t('language.switching_to', { language: 'button.login' })
+     * // => "Switching to Login..."
      *
-     * @param key Translation key (dot-notation)
+     * @param key Translation key (dot-notation for nested keys)
      * @param params Optional parameters for replacement
      * @param defaultValue Optional default value
      * @returns Translated string with replaced parameters
@@ -90,7 +97,7 @@ declare function initI18n(config?: I18nConfig): I18nManager;
 declare function getI18n(): I18nManager;
 /**
  * Global translation function
- * @param key Translation key
+ * @param key Translation key (supports dot notation for nested keys)
  * @param params Optional parameters
  * @param defaultValue Optional default value
  * @returns Translated string
@@ -132,6 +139,7 @@ declare function getSupportedLanguages(): string[];
         request         : Request;
         params          : Record<string, string>;
         query           : Record<string, string>;
+
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         body            : any;
         headers         : Headers;
@@ -141,6 +149,8 @@ declare function getSupportedLanguages(): string[];
         lang?           : string;
         user?           : unknown;
         requestId       : string;
+
+        state           : Record<string, unknown>;
 
         // Response methods
         json        (data: unknown,     status?: number): Response;

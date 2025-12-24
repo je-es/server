@@ -13,7 +13,7 @@
     }                                               from '../src/main';
 	import { mkdirSync, writeFileSync, rmSync }     from 'fs';
 	import { join }                                 from 'path';
-	import { StaticFileServer }                     from '../src/mod/static';
+	import { StaticFileServer }                     from '../src/mod/core/static';
 
 
 // ╚══════════════════════════════════════════════════════════════════════════════════════╝

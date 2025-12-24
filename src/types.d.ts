@@ -7,7 +7,7 @@
 // ╔════════════════════════════════════════ PACK ════════════════════════════════════════╗
 
     import { DB } from '@je-es/sdb';
-    import type { I18nManager } from './mod/i18n';
+    import type { I18nManager } from './mod/core/i18n';
 
 // ╚══════════════════════════════════════════════════════════════════════════════════════╝
 
@@ -25,6 +25,7 @@
         request         : Request;
         params          : Record<string, string>;
         query           : Record<string, string>;
+
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         body            : any;
         headers         : Headers;
@@ -34,6 +35,8 @@
         lang?           : string;
         user?           : unknown;
         requestId       : string;
+
+        state           : Record<string, unknown>;
 
         // Response methods
         json        (data: unknown,     status?: number): Response;

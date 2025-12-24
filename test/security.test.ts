@@ -8,7 +8,7 @@
 
 	import { describe, test, expect } from 'bun:test';
 	import { server, type AppContext } from '../src/main';
-	import { SecurityManager } from '../src/mod/security';
+	import { SecurityManager } from '../src/mod/core/security';
 
 // ╚══════════════════════════════════════════════════════════════════════════════════════╝
 

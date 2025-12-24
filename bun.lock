@@ -4,7 +4,7 @@
     "": {
       "name": "@je-es/server",
       "dependencies": {
-        "@je-es/sdb": "^0.0.1",
+        "@je-es/sdb": "^0.0.3",
         "@je-es/slog": "^0.0.1",
       },
       "devDependencies": {
@@ -105,7 +105,7 @@
 
     "@humanwhocodes/retry": ["@humanwhocodes/retry@0.4.3", "", {}, "sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ=="],
 
-    "@je-es/sdb": ["@je-es/sdb@0.0.1", "", { "peerDependencies": { "bun": ">=1.3.3" } }, "sha512-FdftGw4w7lXDibfg4QMjd+CcVhunqaHf1WfUp/yPr+DDBcc368NcGG1zItvkR0/5J0m5wQS9Zh2J3B4niKai1A=="],
+    "@je-es/sdb": ["@je-es/sdb@0.0.3", "", { "peerDependencies": { "bun": ">=1.3.3" } }, "sha512-X32a63OW9XR190cXiPmKsMCn94NGcF266o98s+Xmlvr1j9ss/99WUlmlvTkM8UzG+Hf3Vm72h06jtpNDat/yWw=="],
 
     "@je-es/slog": ["@je-es/slog@0.0.1", "", { "peerDependencies": { "bun": ">=1.3.3" } }, "sha512-8rxsjefo2MGkuyJjl1EDKEplzMFLT/EIOVmEfGsFEOgKIQQQ2b+M884fZKSU+ynaOtPPisfKi9BF9CUeukehAw=="],
 

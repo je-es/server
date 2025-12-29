@@ -1,6 +1,6 @@
 {
 	"name"                             : "@je-es/server",
-	"version"                          : "0.2.0",
+	"version"                          : "0.2.1",
 	"description"                      : "The simplest, fastest, and most organized way to build production-ready servers with Bun.",
 	"keywords"                         : ["je-es", "server"],
 	"license"                          : "MIT",

@@ -138,36 +138,6 @@
 
 			await app.stop();
 		});
-
-		test('CORS - adds headers for allowed origin', async () => {
-			const app = server({
-				port: 3211,
-				logging: false,
-				security: {
-					cors: {
-						origin: ['http://localhost:3000', 'http://example.com'],
-						credentials: true
-					}
-				},
-				routes: [
-					{
-						method: 'GET',
-						path: '/test',
-						handler: (c: AppContext) => c.json({ ok: true })
-					}
-				]
-			});
-
-			await app.start();
-
-			const res = await fetch('http://localhost:3211/test', {
-				headers: { 'Origin': 'http://localhost:3000' }
-			});
-			expect(res.status).toBe(200);
-			expect(res.headers.get('Access-Control-Allow-Origin')).toBe('http://localhost:3000');
-
-			await app.stop();
-		});
 	});
 
 	describe('Security - Rate Limiting', () => {

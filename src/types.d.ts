@@ -198,6 +198,8 @@
         middlewares?    : AppMiddleware[];
 
         errorHandler?   : (error: Error, context: AppContext) => void | Promise<void>;
+        // Error page handler - returns Response for custom error pages
+        onError?        : (statusCode: number, path: string, method: string) => Response | Promise<Response>;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         onStartup?      : (app: any) => void | Promise<void>;
         onReady?        : (app: ServerInstance, db: Map<string, DB>) => void | Promise<void>;

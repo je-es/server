@@ -55,6 +55,7 @@
 		const dbs                       = new Map<string, sdb.DB>();
 		const routes: types.RouteDefinition[] = [];
 		const activeRequests            = new Set<string>();
+		const staticHandlers: { prefix: string; handler: types.RouteHandler }[] = [];
 
 		// ════════ Cleanup intervals ════════
         const cleanupInterval = setInterval(() => {
@@ -118,9 +119,13 @@
                 // Get database
                 const defaultDb = dbs.get('default');
 
-                // Detect language from request (query param, header, or cookie)
+                // Detect language from request (query param, cookie, header, or default)
                 const query = Object.fromEntries(new URL(request.url).searchParams);
-                let requestLang = (query.lang as string) || request.headers.get('Accept-Language')?.split(',')[0]?.split('-')[0] || 'en';
+                const cookieHeader = request.headers.get('cookie') || '';
+                const parsedRequestCookies = parseCookies(cookieHeader);
+                const cookieLang = parsedRequestCookies.get('lang');
+
+                let requestLang = (query.lang as string) || cookieLang || request.headers.get('Accept-Language')?.split(',')[0]?.split('-')[0] || 'en';
                 if (i18n && !i18n.getSupportedLanguages().includes(requestLang)) {
                     requestLang = i18n.getLanguage();
                 }
@@ -133,6 +138,17 @@
                 if (!routeMatch) {
                     const ctx = createAppContext(ip, request, {}, defaultDb, logger, requestId, i18n, requestLang);
                     logger?.warn({ requestId, method, path, ip }, 'Route not found');
+
+                    // Call onError handler if provided
+                    if (config.onError) {
+                        try {
+                            const errorResponse = await config.onError(404, path, method);
+                            return errorResponse;
+                        } catch (e) {
+                            logger?.error({ error: String(e), requestId }, 'Error in onError handler');
+                        }
+                    }
+
                     return ctx.json({ error: 'Not Found', path }, 404);
                 }
 
@@ -197,6 +213,17 @@
             } catch (error) {
                 if (error instanceof types.AppError) {
                     logger?.warn({ error: error.message, requestId, ip }, `App error: ${error.message}`);
+
+                    // Call onError handler for AppError if provided
+                    if (config.onError) {
+                        try {
+                            const errorResponse = await config.onError(error.statusCode, path, method);
+                            return errorResponse;
+                        } catch (e) {
+                            logger?.error({ error: String(e), requestId }, 'Error in onError handler');
+                        }
+                    }
+
                     return new Response(
                         JSON.stringify({
                             error	: error.message,
@@ -212,6 +239,16 @@
                 const errorMessage = process.env.NODE_ENV === 'production'
                     ? 'Internal Server Error'
                     : (error as Error).message;
+
+                // Call onError handler for unhandled errors if provided
+                if (config.onError) {
+                    try {
+                        const errorResponse = await config.onError(500, path, method);
+                        return errorResponse;
+                    } catch (e) {
+                        logger?.error({ error: String(e), requestId }, 'Error in onError handler');
+                    }
+                }
 
                 return new Response(
                     JSON.stringify({ error: errorMessage, requestId }),
@@ -347,6 +384,13 @@
                     };
 
                     routes.push(staticRoute);
+
+                    // Add to static handlers list for early matching
+                    const prefix = staticCfg.path === '/' ? '/' : staticCfg.path;
+                    staticHandlers.push({
+                        prefix,
+                        handler: handler as types.RouteHandler
+                    });
 
                     if (staticCfg.path === '/') {
                         router.register('GET', '/', handler as types.RouteHandler, staticRoute);
